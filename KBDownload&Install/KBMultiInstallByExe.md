@@ -1,1 +1,2 @@
-将installer.exe，放在patches目录下，右键管理员执行
+本程序由installer.py打包而成
+将installer.exe，放在patches目录下，右键管理员执行，即可安装符合系统版本的补丁
