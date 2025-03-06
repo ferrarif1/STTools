@@ -118,4 +118,4 @@ updated_kb_list.xlsx         # 结果 Excel 文件，记录下载状态
 ---
 
 
-![](https://github.com/ferrarif1/MyWorkNote/blob/main/KBDownload/运行图.jpg)
+![](https://github.com/ferrarif1/STTools/blob/main/KBDownload%26Install/%E8%BF%90%E8%A1%8C%E5%9B%BE.jpg)
