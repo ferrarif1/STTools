@@ -37,7 +37,7 @@ function createMultipleSkulls(count = 5) {
 
   for (let i = 0; i < count; i++) {
     const skull = document.createElement('img');
-    skull.src = 'https://172.16.1.20:8000/oiiaioooooiai.gif';
+    skull.src = 'http://172.16.1.20:8000/oiiaioooooiai.gif';
     skull.style.position = 'absolute';
     skull.style.width = '100px';
     skull.style.height = '100px';
