@@ -13,6 +13,10 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 # Microsoft Update Catalog URL
+# Microsoft Update Catalog (catalog.update.microsoft.com) 上主要提供的是安全更新补丁，特别是：
+# 安全更新 (Security Updates)
+# 关键补丁 (Critical Updates)
+# 高危漏洞修复 (Security Vulnerability Fixes)
 UPDATE_CATALOG_URL = "https://www.catalog.update.microsoft.com/Search.aspx?q="
 
 # 配置 ChromeDriver
