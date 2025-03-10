@@ -1,6 +1,6 @@
 ### **README - Microsoft Update Catalog 补丁下载工具**  
 
-[使用PowerShell批量安装补丁看此说明](https://github.com/ferrarif1/MyWorkNote/blob/main/Tools/KBDownload%26Install/KBMultiInstallByPs1.md)  
+
 [使用Installer.exe批量安装补丁看此说明](https://github.com/ferrarif1/MyWorkNote/blob/main/Tools/KBDownload%26Install/KBMultiInstallByExe.md)
 #### **📌 功能概述**  
 本工具基于 **Selenium** 和 **Requests**，自动化从 **Microsoft Update Catalog** 批量下载指定的 **KB 补丁**，并支持以下功能：  
