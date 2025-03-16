@@ -1,0 +1,119 @@
+#!/bin/bash
+
+# 确保脚本以root用户运行
+if [ "$(id -u)" != "0" ]; then
+   echo "该脚本需要root权限运行" 1>&2
+   exit 1
+fi
+
+
+# 2. 设置密码策略
+echo "设置密码策略..."
+sed -i '/PASS_MIN_LEN/s/5/8/g' /etc/login.defs
+sed -i '/PASS_MIN_DAYS/s/0/1/g' /etc/login.defs
+sed -i '/PASS_MAX_DAYS/s/99999/90/g' /etc/login.defs
+sed -i '/PASS_WARN_AGE/s/7/14/g' /etc/login.defs
+
+# 3. 禁用不必要的用户和组
+echo "禁用不必要的用户和组..."
+for i in lp sync shutdown halt news uucp operator games gopher
+do
+    userdel $i 2>/dev/null
+    groupdel $i 2>/dev/null
+done
+
+# 4. 禁用不必要的服务
+echo "禁用不必要的服务..."
+services=("telnet" "ftp" "rsh" "rlogin" "rexec")
+for service in "${services[@]}"
+do
+    systemctl disable $service --now 2>/dev/null
+done
+
+# 5. 配置SSH
+echo "配置SSH..."
+#sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/' /etc/ssh/sshd_config
+#sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin no/' /etc/ssh/sshd_config
+#sed -i 's/#X11Forwarding yes/X11Forwarding no/' /etc/ssh/sshd_config
+#sed -i 's/#Port 22/Port 2222/' /etc/ssh/sshd_config
+#systemctl restart sshd
+
+# 6. 配置防火墙
+# 启动firewalld服务
+echo "启动firewalld服务..."
+systemctl enable firewalld
+systemctl start firewalld
+
+# 设置默认区域为public
+firewall-cmd --set-default-zone=public
+
+# 关闭高危端口（示例：关闭FTP端口21、Telnet端口23等）
+echo "关闭高危端口..."
+firewall-cmd --permanent --remove-service=ftp
+firewall-cmd --permanent --remove-service=telnet
+firewall-cmd --permanent --remove-port=23/tcp
+firewall-cmd --permanent --remove-port=21/tcp
+firewall-cmd --permanent --remove-port=139/tcp
+firewall-cmd --permanent --remove-port=445/tcp
+
+#开启端口
+firewall-cmd --zone=public --add-port=80/tcp --permanent
+
+# 针对SSH端口2222，只允许10.136.72.0/24网段访问
+echo "配置SSH端口2222的访问限制..."
+#firewall-cmd --permanent --zone=public --add-port=2222/tcp
+firewall-cmd --permanent --zone=public --add-rich-rule='rule family="ipv4" source address="10.136.72.0/24" port port="2222" protocol="tcp" accept'
+
+# 重新加载firewalld规则
+echo "重新加载firewalld规则..."
+firewall-cmd --reload
+
+echo "防火墙配置完成！"
+
+
+# 7. 设置文件权限
+echo "设置文件权限..."
+chattr +i /etc/passwd /etc/shadow /etc/group /etc/gshadow
+
+# 8. 安装并配置审计服务
+echo "安装并配置审计服务..."
+apt-get install -y auditd
+systemctl enable auditd
+systemctl start auditd
+
+# 9. 配置日志轮转
+echo "配置日志轮转..."
+cat > /etc/logrotate.d/custom <<EOF
+/var/log/*.log {
+    daily
+    missingok
+    rotate 7
+    compress
+    delaycompress
+    notifempty
+    create 640 root adm
+}
+EOF
+
+# 10. 禁用不必要的内核模块
+echo "禁用不必要的内核模块..."
+echo "install dccp /bin/true" >> /etc/modprobe.d/disable-dccp.conf
+echo "install sctp /bin/true" >> /etc/modprobe.d/disable-sctp.conf
+
+# 11. 配置PAM模块
+echo "配置PAM模块..."
+cat > /etc/pam.d/common-password <<EOF
+password requisite pam_pwquality.so retry=3 minlen=8 difok=3
+password requisite pam_unix.so obscure use_authtok try_first_pass sha512
+EOF
+
+# 12. 配置登录失败处理
+echo "配置登录失败处理..."
+cat > /etc/pam.d/common-auth <<EOF
+auth required pam_faillock.so preauth silent audit deny=5 unlock_time=900
+auth required pam_unix.so
+auth required pam_faillock.so authfail audit deny=5 unlock_time=900
+auth optional pam_faillock.so authsucc audit deny=5 unlock_time=900
+EOF
+
+echo "安全加固完成！"
