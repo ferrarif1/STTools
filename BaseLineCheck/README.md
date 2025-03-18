@@ -56,10 +56,20 @@
 3. **退出程序**
    - 检查结束后，按回车键退出程序。
 
-### 注意事项
-- 该工具需要管理员权限以获取某些系统信息。
-- 请根据报告中的修复建议谨慎操作，以免影响系统的正常运行。
-- 建议在执行修复操作前备份重要数据。
+### 脚本更新后重新打包为exe：
+编码修复：
+$content = Get-Content -Path ".\check1.ps1" -Raw
+$utf8NoBomEncoding = New-Object System.Text.UTF8Encoding $true
+[System.IO.File]::WriteAllText(".\check1.ps1", $content, $utf8NoBomEncoding)
+
+运行：
+powershell -ExecutionPolicy ByPass -File ".\check1.ps1" -Encoding UTF8
+
+
+打包：
+cd C:\Users\revan\Desktop\MyWorkNote\Tools\BaseLineCheck
+powershell -ExecutionPolicy ByPass -File ".\build.ps1"
+
 
 ## checkline_requirePython.exe
 
