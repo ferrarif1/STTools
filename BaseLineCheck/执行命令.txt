@@ -1,3 +1,0 @@
-# 以管理员身份运行
-Set-ExecutionPolicy Bypass -Scope Process -Force
-.\SecurityCheck.ps1

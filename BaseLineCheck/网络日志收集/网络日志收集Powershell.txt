@@ -1,0 +1,11 @@
+获取最近的网络相关事件日志
+Get-WinEvent -LogName System | Where-Object { $_.ProviderName -match "Network|DHCP|TCPIP|NDIS|WLAN" } | Format-Table TimeCreated, ID, ProviderName, Message -AutoSize
+
+获取 DHCP 相关日志
+Get-WinEvent -LogName System | Where-Object { $_.ProviderName -eq "Microsoft-Windows-DHCP-Client" } | Format-Table TimeCreated, ID, Message -AutoSize
+
+获取 TCP/IP 相关日志
+Get-WinEvent -LogName System | Where-Object { $_.ProviderName -eq "Microsoft-Windows-TCPIP" } | Format-Table TimeCreated, ID, Message -AutoSize
+
+导出到文本文件
+Get-WinEvent -LogName System | Where-Object { $_.ProviderName -match "Network|DHCP|TCPIP|NDIS|WLAN" } | Out-File D:\NetworkLogs.txt
