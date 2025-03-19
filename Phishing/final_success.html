@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <script src="https://cdn.jsdelivr.net/npm/@lottiefiles/lottie-player@latest"></script>
+    <style>
+        /* 保持与登录页面完全一致的样式 */
+        body {
+            font-family: 'Poppins', Arial, sans-serif;
+            background: linear-gradient(135deg, #ff9a9e, #fad0c4, #ffdde1, #a18cd1, #8ec5fc, #78ffd6, #fbc2eb);
+            background-size: 400% 400%;
+            animation: gradientBG 10s ease infinite;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            color: white;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .success-container {
+            width: 500px;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.25);
+            border-radius: 20px;
+            backdrop-filter: blur(20px);
+            text-align: center;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.26);
+        }
+    </style>
+</head>
+<body>
+    <div class="success-container">
+        <lottie-player 
+            style="width: 200px; height: 200px; margin: 0 auto;"
+            src="https://assets10.lottiefiles.com/packages/lf20_w51pcehl.json" 
+            background="transparent" 
+            speed="1" 
+            loop 
+            autoplay>
+        </lottie-player>
+        <a href="/ZeroTrust.zip" class="download-link">安装零信任插件</a>
+        <p style="font-size: 0.9rem; color: #3c3c3d;">解压ZeroTrust.zip————>点击chrome浏览器插件按钮————>打开右上角开发者模式————>点击“加载已解压的扩展程序”按钮————>选择ZeroTrust.zip解压后的目录，即可安装</p>
+        <h2>提交成功！待审核后方可使用系统</h2>
+    </div>
+</body>
+</html>
