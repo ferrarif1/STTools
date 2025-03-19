@@ -19,81 +19,29 @@ function Write-Seperator {
 try {
     Write-Host "========== 安全检查报告 =========="
 
-    # 1. 检查是否开启或使用FTP传输功能
-    Write-Host "`n【1】FTP服务与传输功能检查："
+    # 1. 检查操作系统激活状态
+    Write-Host "`n【1】操作系统激活状态："
     try {
-        # 检查FTP服务是否安装
-        $ftpService = Get-Service -Name FTPSVC -ErrorAction SilentlyContinue
-        
-        # 简化FTP客户端功能检查（不需要管理员权限）
-        $ftpClientInstalled = $false
-        try {
-            # 直接检查FTP客户端程序是否存在
-            $ftpCommand = Get-Command "ftp.exe" -ErrorAction SilentlyContinue
-            $ftpClientInstalled = ($ftpCommand -ne $null)
-        } catch {
-            # 出错时假设未安装
-            $ftpClientInstalled = $false
-        }
+        $osStatus = cscript //Nologo "$env:SystemRoot\System32\slmgr.vbs" /xpr
+        Write-Host $osStatus
 
-        # 检查FTP端口是否开放
-        $ftpPort = $null
-        try {
-            # 使用netstat检查21端口（不需要管理员权限）
-            $netstat = netstat -ano | Select-String -Pattern ":21\s+"
-            $ftpPort = $netstat.Count -gt 0
-        } catch {
-            # 出错时假设端口未开放
-            $ftpPort = $false
+        if ($osStatus -match "未激活" -or $osStatus -match "Not activated") {
+            Write-ErrorMsg "操作系统激活状态异常！"
+            Write-Instruction "请进入【设置】>【更新与安全】>【激活】，确认系统是否已使用合法产品密钥激活；若未激活，请联系IT支持。"
         }
-        
-        # 检查FTP防火墙规则（这部分可能仍然需要管理员权限）
-        $ftpInboundRules = $null
-        try {
-            $ftpInboundRules = Get-NetFirewallRule -DisplayName "*FTP*" -Direction Inbound -Enabled True -ErrorAction SilentlyContinue
-        } catch {
-            Write-Host "无法获取防火墙规则，可能需要管理员权限。" -ForegroundColor Yellow
+        elseif ($osStatus -match "永久激活" -or $osStatus -match "数字许可证激活" -or $osStatus -match "已激活" -or $osStatus -match "Permanently activated" -or $osStatus -match "Activated") {
+            Write-Success "操作系统激活状态正常。"
         }
-        
-        if ($ftpService) {
-            Write-ErrorMsg "检测到FTP服务 (FTPSVC) 已安装且状态为: $($ftpService.Status)"
-            Write-Instruction "出于安全考虑，建议禁用FTP服务。请在【服务】管理器中将FTP服务设置为禁用。"
-        } else {
-            Write-Success "未检测到FTP服务 (FTPSVC) 安装，符合安全要求。"
-        }
-        
-        if ($ftpPort) {
-            Write-ErrorMsg "检测到TCP端口21（FTP默认端口）当前处于监听状态。"
-            Write-Instruction "请检查是否有应用正在使用FTP端口，并停止相关服务。"
-        } else {
-            Write-Success "未检测到TCP端口21（FTP）正在使用。"
-        }
-        
-        if ($ftpInboundRules) {
-            Write-ErrorMsg "检测到允许FTP流量的防火墙入站规则："
-            foreach ($rule in $ftpInboundRules) {
-                Write-Host "  - $($rule.DisplayName) (已启用)" -ForegroundColor Red
-            }
-            Write-Instruction "请进入【Windows Defender 防火墙】>【高级设置】禁用这些规则，或将其操作设置为阻止。"
-        } else {
-            Write-Success "未检测到允许FTP流量的防火墙入站规则。"
-        }
-        
-        if ($ftpClientInstalled) {
-            Write-ErrorMsg "FTP客户端功能已启用。"
-            Write-Instruction "建议禁用FTP客户端功能。请在【控制面板】>【程序和功能】>【启用或关闭Windows功能】中取消勾选FTP客户端。"
-        } else {
-            Write-Success "FTP客户端功能未启用，符合安全要求。"
-        }
-        
-        if (-not $ftpService -and -not $ftpPort -and -not $ftpInboundRules -and -not $ftpClientInstalled) {
-            Write-Success "系统未启用FTP相关功能，符合安全基线要求。"
+        else {
+            Write-ErrorMsg "无法确定操作系统激活状态，请手动检查。"
+            Write-Instruction "请进入【设置】>【更新与安全】>【激活】查看详细信息。"
         }
     } catch {
-        Write-ErrorMsg "检查FTP功能时发生错误: $_"
-        Write-Instruction "请手动检查FTP服务和端口21的状态。"
+        Write-ErrorMsg "获取操作系统激活状态失败: $_"
+        Write-Instruction "请检查权限或手动运行 'slmgr.vbs /xpr' 以确认状态。"
     }
     Write-Seperator
+
 
     # 3. 输出所有网卡信息，并检查无线网卡状态
     Write-Host "`n【2】网卡信息："
