@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>自定义表单示例</title>
+</head>
+<body>
+  <!-- 这里是四个示例输入框，你可以根据需要修改 placeholder 或 label -->
+  <div>
+    <input id="step1" type="text" placeholder="Step 1: 姓名">
+    <input id="step2" type="text" placeholder="Step 2: 部门">
+    <input id="step3" type="text" placeholder="Step 3: 手机号">
+    <input id="step4" type="text" placeholder="Step 4: 邮箱">
+    <button id="submitButton">提交</button>
+  </div>
+
+  <script>
+    document.getElementById('submitButton').addEventListener('click', function() {
+      // 1. 获取输入框的值
+      const data1 = document.getElementById('step1').value;
+      const data2 = document.getElementById('step2').value;
+      const data3 = document.getElementById('step3').value;
+      const data4 = document.getElementById('step4').value;
+      
+      // 2. 通过 fetch 以 JSON 格式 POST 到你的服务端
+      fetch('http://127.0.0.1:8000/log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          data: {
+            step1: data1,
+            step2: data2,
+            step3: data3,
+            step4: data4
+          }
+        })
+      })
+      .then(response => response.json())
+      .then(result => {
+        console.log('后端返回结果:', result);
+        alert('数据已发送到后端！');
+      })
+      .catch(error => {
+        console.error('请求出错:', error);
+        alert('提交失败，请检查网络或后端服务。');
+      });
+    });
+  </script>
+</body>
+</html>
