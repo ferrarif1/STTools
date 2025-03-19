@@ -21,7 +21,7 @@ patches/
 │   └── Windows11-x64.msu
 ├── KB5034765/
 │   └── Server2019.msu
-└── installer.exe       # 主程序位置
+installer.exe       # 主程序位置
 ```
 
 ### **2️⃣ 执行安装**
