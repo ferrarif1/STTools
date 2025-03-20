@@ -25,7 +25,8 @@ chrome_options.add_argument("--headless")  # 无界面运行
 chrome_options.add_argument("--disable-gpu")
 chrome_options.add_argument("--no-sandbox")
 
-webdriver_path = "./chromedriver-win64/chromedriver.exe"  # 替换为你的 WebDriver 路径
+# Fix: Use raw string prefix (r) for Windows paths to avoid escape sequence issues
+webdriver_path = r"C:\Users\revan\Desktop\STTools\KBDownloadandInstall\chromedriver-win64\chromedriver-win64\chromedriver.exe"
 service = Service(webdriver_path)
 driver = webdriver.Chrome(service=service, options=chrome_options)
 
