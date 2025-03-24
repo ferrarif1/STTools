@@ -168,5 +168,19 @@ try {
 }
 Write-Seperator
 
+# 密码策略检查
+Write-Host "`n【9】密码策略检查："
+try {
+    $netAccOutput = net accounts
+    Write-Host "【net accounts】输出如下："
+    $netAccOutput -split "`n" | ForEach-Object { Write-Host $_.Trim() }
+
+    Write-Instruction "建议设置密码最长使用期限不超过 90 天，并启用强密码策略。可通过本地安全策略 (secpol.msc) 或组策略 (gpedit.msc) 设置。"
+} catch {
+    Write-ErrorMsg "获取密码策略失败：$_"
+}
+Write-Seperator
+
+
 Write-Host "`n========== 检查结束 =========="
 Read-Host "按回车退出..."
