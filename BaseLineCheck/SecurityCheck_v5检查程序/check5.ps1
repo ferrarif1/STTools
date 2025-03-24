@@ -26,7 +26,7 @@ try {
     $ftpClientInstalled = Get-Command "ftp.exe" -ErrorAction SilentlyContinue
     if ($ftpClientInstalled) {
         Write-ErrorMsg "FTP客户端功能已启用。"
-        Write-Instruction "建议在‘控制面板’>‘启用或关闭Windows功能’中禁用 FTP 客户端。"
+        Write-Instruction "建议在'控制面板'>'启用或关闭Windows功能'中禁用 FTP 客户端。"
     } else {
         Write-Success "FTP 客户端未启用。"
     }
@@ -73,12 +73,31 @@ try {
 }
 Write-Seperator
 
-# 高危端口检测（使用 netsh 替代 Get-NetFirewallRule）
+# 高危端口检测
 Write-Host "`n【3】高危端口检测："
 $ports = @(22,23,135,137,138,139,445,455,3389,4899)
 foreach ($port in $ports) {
-    $ruleCheck = netsh advfirewall firewall show rule name=all | Select-String "Port: $port"
-    if ($ruleCheck) {
+    $rules = netsh advfirewall firewall show rule name=all | Out-String
+    $isBlocked = $false
+    if ($rules -match "LocalPort:\s*$port\b" -or 
+        $rules -match "RemotePort:\s*$port\b" -or 
+        $rules -match "Port:\s*$port\b" -or
+        $rules -match "本地端口:\s*$port\b" -or
+        $rules -match "远程端口:\s*$port\b" -or
+        $rules -match "端口:\s*$port\b") {
+        $isBlocked = $true
+    } else {
+        $rules -split "`n" | ForEach-Object {
+            if ($_ -match "(LocalPort|RemotePort|Port|本地端口|远程端口|端口):\s*(\d+)-(\d+)") {
+                $start = [int]$matches[2]
+                $end = [int]$matches[3]
+                if ($port -ge $start -and $port -le $end) {
+                    $isBlocked = $true
+                }
+            }
+        }
+    }
+    if ($isBlocked) {
         Write-Success "端口 $port 存在防火墙规则。"
     } else {
         Write-ErrorMsg "端口 $port 未设置防火墙封禁。"
@@ -124,7 +143,7 @@ try {
     if ($guest) {
         if (-not $guest.Disabled) {
             Write-ErrorMsg "Guest 用户已启用。"
-            Write-Instruction "请在‘计算机管理’中禁用 Guest 用户。"
+            Write-Instruction "请在'计算机管理'中禁用 Guest 用户。"
         } else {
             Write-Success "Guest 用户已禁用。"
         }
@@ -174,13 +193,12 @@ try {
     $netAccOutput = net accounts
     Write-Host "【net accounts】输出如下："
     $netAccOutput -split "`n" | ForEach-Object { Write-Host $_.Trim() }
-
-    Write-Instruction "建议设置密码最长使用期限不超过 90 天，并启用强密码策略。可通过本地安全策略 (secpol.msc) 或组策略 (gpedit.msc) 设置。"
+    Write-Instruction "建议设置密码最长使用期限不超过 90 天，并启用强密码策略。"
 } catch {
     Write-ErrorMsg "获取密码策略失败：$_"
 }
 Write-Seperator
 
-
 Write-Host "`n========== 检查结束 =========="
-Read-Host "按回车退出..."
+Write-Host "按任意键退出..."
+$x = $host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")

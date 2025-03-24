@@ -1,3 +1,4 @@
+
 # 设置 PowerShell 控制台输出编码为 UTF8（兼容 Win7/8）
 $OutputEncoding = New-Object -typename System.Text.UTF8Encoding
 [Console]::OutputEncoding = New-Object -typename System.Text.UTF8Encoding
@@ -76,13 +77,8 @@ Write-Seperator
 Write-Host "`n【3】高危端口检测："
 $ports = @(22,23,135,137,138,139,445,455,3389,4899)
 foreach ($port in $ports) {
-    # 分别检查入站和出站规则
     $rules = netsh advfirewall firewall show rule name=all | Out-String
-    
-    # 使用更通用的匹配模式，同时支持新旧版本Windows
     $isBlocked = $false
-    
-    # 检查所有可能的端口格式
     if ($rules -match "LocalPort:\s*$port\b" -or 
         $rules -match "RemotePort:\s*$port\b" -or 
         $rules -match "Port:\s*$port\b" -or
@@ -90,9 +86,7 @@ foreach ($port in $ports) {
         $rules -match "远程端口:\s*$port\b" -or
         $rules -match "端口:\s*$port\b") {
         $isBlocked = $true
-    }
-    # 检查端口范围
-    else {
+    } else {
         $rules -split "`n" | ForEach-Object {
             if ($_ -match "(LocalPort|RemotePort|Port|本地端口|远程端口|端口):\s*(\d+)-(\d+)") {
                 $start = [int]$matches[2]
@@ -103,7 +97,6 @@ foreach ($port in $ports) {
             }
         }
     }
-    
     if ($isBlocked) {
         Write-Success "端口 $port 存在防火墙规则。"
     } else {
@@ -200,3 +193,12 @@ try {
     $netAccOutput = net accounts
     Write-Host "【net accounts】输出如下："
     $netAccOutput -split "`n" | ForEach-Object { Write-Host $_.Trim() }
+    Write-Instruction "建议设置密码最长使用期限不超过 90 天，并启用强密码策略。"
+} catch {
+    Write-ErrorMsg "获取密码策略失败：$_"
+}
+Write-Seperator
+
+Write-Host "`n========== 检查结束 =========="
+Write-Host "按任意键退出..."
+$x = $host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
