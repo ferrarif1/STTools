@@ -79,23 +79,24 @@ foreach ($port in $ports) {
     # 分别检查入站和出站规则
     $rules = netsh advfirewall firewall show rule name=all | Out-String
     
-    # 使用更简单的匹配模式，确保 Win7/8 兼容性
+    # 使用更通用的匹配模式，同时支持新旧版本Windows
     $isBlocked = $false
     
-    # 检查本地端口
-    if ($rules -match "LocalPort:\s*$port\b") {
+    # 检查所有可能的端口格式
+    if ($rules -match "LocalPort:\s*$port\b" -or 
+        $rules -match "RemotePort:\s*$port\b" -or 
+        $rules -match "Port:\s*$port\b" -or
+        $rules -match "本地端口:\s*$port\b" -or
+        $rules -match "远程端口:\s*$port\b" -or
+        $rules -match "端口:\s*$port\b") {
         $isBlocked = $true
     }
-    # 检查远程端口
-    elseif ($rules -match "RemotePort:\s*$port\b") {
-        $isBlocked = $true
-    }
-    # 检查端口范围（格式：1024-5000）
+    # 检查端口范围
     else {
         $rules -split "`n" | ForEach-Object {
-            if ($_ -match "LocalPort:\s*(\d+)-(\d+)" -or $_ -match "RemotePort:\s*(\d+)-(\d+)") {
-                $start = [int]$matches[1]
-                $end = [int]$matches[2]
+            if ($_ -match "(LocalPort|RemotePort|Port|本地端口|远程端口|端口):\s*(\d+)-(\d+)") {
+                $start = [int]$matches[2]
+                $end = [int]$matches[3]
                 if ($port -ge $start -and $port -le $end) {
                     $isBlocked = $true
                 }
