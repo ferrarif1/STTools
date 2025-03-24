@@ -7,7 +7,7 @@
 
 ## 🧰 工具列表
 
-1. **🔒 SecurityCheck_v5.exe** - 全面的安全基线检测工具
+1. **🔒 SecurityCheck_v5.exe** - 全面的安全基线检测工具，在win7-win8中依赖[Windows Management Framework 5.1](https://www.microsoft.com/en-us/download/details.aspx?id=54616)
 2. **🐍 checkline_requirePython.exe** - 依赖Python环境的基线检测工具
 
 ## 🚀 SecurityCheck_v5.exe
