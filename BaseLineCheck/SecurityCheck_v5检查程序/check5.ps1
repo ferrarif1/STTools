@@ -1,3 +1,4 @@
+
 # 设置 PowerShell 控制台输出编码为 UTF8（兼容 Win7/8）
 $OutputEncoding = New-Object -typename System.Text.UTF8Encoding
 [Console]::OutputEncoding = New-Object -typename System.Text.UTF8Encoding
@@ -25,7 +26,7 @@ try {
     $ftpClientInstalled = Get-Command "ftp.exe" -ErrorAction SilentlyContinue
     if ($ftpClientInstalled) {
         Write-ErrorMsg "FTP客户端功能已启用。"
-        Write-Instruction "建议在'控制面板'>'启用或关闭Windows功能'中禁用 FTP 客户端。"
+        Write-Instruction "建议在‘控制面板’>‘启用或关闭Windows功能’中禁用 FTP 客户端。"
     } else {
         Write-Success "FTP 客户端未启用。"
     }
@@ -72,38 +73,12 @@ try {
 }
 Write-Seperator
 
-# 高危端口检测
+# 高危端口检测（使用 netsh 替代 Get-NetFirewallRule）
 Write-Host "`n【3】高危端口检测："
 $ports = @(22,23,135,137,138,139,445,455,3389,4899)
 foreach ($port in $ports) {
-    # 分别检查入站和出站规则
-    $rules = netsh advfirewall firewall show rule name=all | Out-String
-    
-    # 使用更简单的匹配模式，确保 Win7/8 兼容性
-    $isBlocked = $false
-    
-    # 检查本地端口
-    if ($rules -match "LocalPort:\s*$port\b") {
-        $isBlocked = $true
-    }
-    # 检查远程端口
-    elseif ($rules -match "RemotePort:\s*$port\b") {
-        $isBlocked = $true
-    }
-    # 检查端口范围（格式：1024-5000）
-    else {
-        $rules -split "`n" | ForEach-Object {
-            if ($_ -match "LocalPort:\s*(\d+)-(\d+)" -or $_ -match "RemotePort:\s*(\d+)-(\d+)") {
-                $start = [int]$matches[1]
-                $end = [int]$matches[2]
-                if ($port -ge $start -and $port -le $end) {
-                    $isBlocked = $true
-                }
-            }
-        }
-    }
-    
-    if ($isBlocked) {
+    $ruleCheck = netsh advfirewall firewall show rule name=all | Select-String "Port: $port"
+    if ($ruleCheck) {
         Write-Success "端口 $port 存在防火墙规则。"
     } else {
         Write-ErrorMsg "端口 $port 未设置防火墙封禁。"
@@ -149,7 +124,7 @@ try {
     if ($guest) {
         if (-not $guest.Disabled) {
             Write-ErrorMsg "Guest 用户已启用。"
-            Write-Instruction "请在'计算机管理'中禁用 Guest 用户。"
+            Write-Instruction "请在‘计算机管理’中禁用 Guest 用户。"
         } else {
             Write-Success "Guest 用户已禁用。"
         }
@@ -199,3 +174,13 @@ try {
     $netAccOutput = net accounts
     Write-Host "【net accounts】输出如下："
     $netAccOutput -split "`n" | ForEach-Object { Write-Host $_.Trim() }
+
+    Write-Instruction "建议设置密码最长使用期限不超过 90 天，并启用强密码策略。可通过本地安全策略 (secpol.msc) 或组策略 (gpedit.msc) 设置。"
+} catch {
+    Write-ErrorMsg "获取密码策略失败：$_"
+}
+Write-Seperator
+
+
+Write-Host "`n========== 检查结束 =========="
+Read-Host "按回车退出..."
