@@ -24,19 +24,19 @@ class LogHandler(BaseHTTPRequestHandler):
             client_ip = self.client_address[0]
             timestamp = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
 
-            # 写入 txt 文件
+            # 写入 txt 文件，使用 utf-8-sig 防止中文乱码
             txt_path = os.path.join(MONITOR_DIR, f"{client_ip}.txt")
-            with open(txt_path, 'a', encoding='utf-8') as f:
+            with open(txt_path, 'a', encoding='utf-8-sig') as f:
                 f.write(f"[{timestamp}] {json.dumps(plugin_data, ensure_ascii=False)}\n")
 
             # 合并写入 Excel
             self.append_to_excel(client_ip, timestamp, plugin_data)
 
-            # 响应
+            # 响应成功
             self.send_response(200)
-            self.send_header('Content-type', 'application/json')
+            self.send_header('Content-type', 'application/json; charset=utf-8')
             self.end_headers()
-            self.wfile.write(json.dumps({'status': 'success'}).encode('utf-8'))
+            self.wfile.write(json.dumps({'status': 'success'}, ensure_ascii=False).encode('utf-8'))
 
         except json.JSONDecodeError:
             self.send_error(400, "Invalid JSON")
@@ -49,11 +49,19 @@ class LogHandler(BaseHTTPRequestHandler):
         if isinstance(data, dict):
             record.update(data)
         elif isinstance(data, list):
-            record['数据'] = json.dumps(data, ensure_ascii=False)
+            # 多条结构化结果：每一项单独成行
+            df_list = []
+            for entry in data:
+                row = {'IP': ip, '时间': timestamp}
+                if isinstance(entry, dict):
+                    row.update(entry)
+                else:
+                    row['数据'] = str(entry)
+                df_list.append(row)
+            df_new = pd.DataFrame(df_list)
         else:
             record['数据'] = str(data)
-
-        df_new = pd.DataFrame([record])
+            df_new = pd.DataFrame([record])
 
         if os.path.exists(EXCEL_PATH):
             df_old = pd.read_excel(EXCEL_PATH)
