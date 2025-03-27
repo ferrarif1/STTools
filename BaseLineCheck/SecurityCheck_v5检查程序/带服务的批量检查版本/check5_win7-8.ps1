@@ -1,8 +1,20 @@
 # Windows 7/8 客户端安全检查脚本
 
-$ScriptPath = "C:\SecurityCheck_Win7_8.exe"
-$UploadUrl = "http://172.16.1.20:8000/log"
-$FailCache = "C:\check_fail.json"
+# 读取配置文件
+# 读取配置文件
+$configPath = Join-Path $PSScriptRoot "config.json"
+try {
+    $config = Get-Content $configPath -Raw | ConvertFrom-Json
+    $ScriptPath = $config.scriptPath
+    $UploadUrl = $config.uploadUrl
+    $FailCache = $config.failCache
+} catch {
+    Write-Host "无法读取配置文件，使用默认配置" -ForegroundColor Yellow
+    # 默认配置
+    $ScriptPath = "C:\SecurityCheck_v5.exe"
+    $UploadUrl = "http://172.16.1.20:8000/log"
+    $FailCache = "C:\check_fail.json"
+}
 
 function Send-CheckResult {
     param([string]$JsonData)
