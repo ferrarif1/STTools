@@ -1,76 +1,212 @@
+
 # 配置文件路径
 $ipConfigPath = Join-Path $PSScriptRoot "ip_set_config.json"
 
-# 授权密钥（可以更复杂，防止暴力破解）
-$AuthorizedKey = "Hzdsz@roundone9a7b7b3a5d50781b4f4768cd7ce223168f6"
+# 授权密钥（使用 SecureString 存储）
+$AuthorizedKey = ConvertTo-SecureString "Hzdsz@2025#" -AsPlainText -Force
+
+# 加密密钥（使用 SecureString 存储）
+$EncryptionKey = ConvertTo-SecureString "cxrHzfMfQuihZSE4XRP7rumqZY2mNaCU3BXKYL3TKE3DeNxFJ" -AsPlainText -Force
+$SignatureKey = "BQ2zbSKN1SYbNACjjmMM"
+
+# 配置时间戳验证防回放机制
+$MaxTimestampMinutes = 10
+
+# 加密函数
+function Protect-ConfigContent {
+    param([string]$Content)
+    try {
+        # 生成签名
+        $signature = [System.Security.Cryptography.HMACSHA256]::new(
+            [System.Text.Encoding]::UTF8.GetBytes($SignatureKey)
+        ).ComputeHash(
+            [System.Text.Encoding]::UTF8.GetBytes($Content)
+        )
+        
+        # 转换为Base64
+        $signatureBase64 = [Convert]::ToBase64String($signature)
+        
+        # 加密内容
+        $secureContent = [System.Security.Cryptography.ProtectedData]::Protect(
+            [System.Text.Encoding]::UTF8.GetBytes($Content),
+            [System.Text.Encoding]::UTF8.GetBytes((ConvertFrom-SecureString $EncryptionKey)),
+            [System.Security.Cryptography.DataProtectionScope]::LocalMachine
+        )
+        
+        # 组合加密内容和签名
+        $protectedData = @{
+            Content   = [Convert]::ToBase64String($secureContent)
+            Signature = $signatureBase64
+            Timestamp = (Get-Date).ToString("o")
+        }
+        
+        return ($protectedData | ConvertTo-Json)
+    }
+    catch {
+        Write-EventLog -LogName "Application" -Source "SecurityCheck" -EntryType Error -EventId 1001 -Message "加密配置文件失败: $_"
+        throw
+    }
+}
+
+# 解密函数
+function Unprotect-ConfigContent {
+    param([string]$ProtectedContent)
+    try {
+        $protectedData = $ProtectedContent | ConvertFrom-Json
+        
+        # 验证时间戳防回放
+        $timestamp = [datetime]::Parse($protectedData.Timestamp)
+        if ($timestamp -lt (Get-Date).AddMinutes(-$MaxTimestampMinutes)) {
+            throw "配置文件时间戳已过期，文件可能被篡改或回放"
+        }
+
+        # 解密内容
+        $decryptedBytes = [System.Security.Cryptography.ProtectedData]::Unprotect(
+            [Convert]::FromBase64String($protectedData.Content),
+            [System.Text.Encoding]::UTF8.GetBytes((ConvertFrom-SecureString $EncryptionKey)),
+            [System.Security.Cryptography.DataProtectionScope]::LocalMachine
+        )
+        
+        $decryptedContent = [System.Text.Encoding]::UTF8.GetString($decryptedBytes)
+        
+        # 验证签名
+        $computedSignature = [System.Security.Cryptography.HMACSHA256]::new(
+            [System.Text.Encoding]::UTF8.GetBytes($SignatureKey)
+        ).ComputeHash(
+            [System.Text.Encoding]::UTF8.GetBytes($decryptedContent)
+        )
+        
+        $originalSignature = [Convert]::FromBase64String($protectedData.Signature)
+        
+        # 比较签名
+        if (-not (Compare-Object $computedSignature $originalSignature)) {
+            return $decryptedContent
+        } else {
+            throw "配置文件签名验证失败，文件可能被篡改"
+        }
+    }
+    catch {
+        Write-EventLog -LogName "Application" -Source "SecurityCheck" -EntryType Error -EventId 1002 -Message "解密配置文件失败: $_"
+        throw
+    }
+}
+
+# 设置文件权限
+function Set-SecureFilePermissions {
+    param([string]$FilePath)
+    try {
+        # 获取当前用户和SYSTEM账户
+        $currentUser = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
+        $systemAccount = "NT AUTHORITY\SYSTEM"
+        
+        # 创建新的访问规则
+        $acl = Get-Acl $FilePath
+        $acl.SetAccessRuleProtection($true, $false) # 禁用继承
+        
+        # 清除所有现有规则
+        $acl.Access | ForEach-Object { $acl.RemoveAccessRule($_) }
+        
+        # 添加新规则
+        $rule1 = New-Object System.Security.AccessControl.FileSystemAccessRule(
+            $currentUser, "FullControl", "Allow"
+        )
+        $rule2 = New-Object System.Security.AccessControl.FileSystemAccessRule(
+            $systemAccount, "FullControl", "Allow"
+        )
+        
+        $acl.AddAccessRule($rule1)
+        $acl.AddAccessRule($rule2)
+        
+        # 应用新的权限
+        Set-Acl -Path $FilePath -AclObject $acl
+    }
+    catch {
+        Write-EventLog -LogName "Application" -Source "SecurityCheck" -EntryType Error -EventId 1003 -Message "设置文件权限失败: $_"
+        throw
+    }
+}
 
 # 读取已授权的 IP 网段
 function Get-AuthorizedIPs {
     if (Test-Path $ipConfigPath) {
         try {
-            $ipConfig = Get-Content $ipConfigPath -Raw | ConvertFrom-Json
-            return $ipConfig.ipList
-        } catch {
-            Write-Host "配置文件格式错误，重新创建。" -ForegroundColor Yellow
+            # 读取加密的配置文件
+            $encryptedContent = Get-Content $ipConfigPath -Raw
+            $decryptedContent = Unprotect-ConfigContent $encryptedContent
+            $ipConfig = $decryptedContent | ConvertFrom-Json
+            
+            # 过滤出未过期的IP
+            $currentDate = Get-Date
+            $validIPs = @()
+            foreach ($ip in $ipConfig.ipList) {
+                $expiryDate = [DateTime]::ParseExact($ip.expiryDate, "yyyy-MM-dd", $null)
+                if ($currentDate -le $expiryDate) {
+                    $validIPs += $ip.subnet
+                }
+            }
+            return $validIPs
+        }
+        catch {
+            Write-EventLog -LogName "Application" -Source "SecurityCheck" -EntryType Error -EventId 1004 -Message "配置文件读取失败，重新创建。"
             return @()
         }
-    } else {
-        # 如果文件不存在，创建空配置
-        @{} | ConvertTo-Json | Set-Content -Path $ipConfigPath -Encoding UTF8
+    }
+    else {
+        # 创建新的加密配置文件
+        $newConfig = @{ ipList = @() } | ConvertTo-Json
+        $encryptedConfig = Protect-ConfigContent $newConfig
+        $encryptedConfig | Set-Content -Path $ipConfigPath -Encoding UTF8
+        Set-SecureFilePermissions $ipConfigPath
         return @()
     }
 }
 
 # 保存授权的 IP 网段
 function Add-AuthorizedIP {
-    param (
-        [string]$newSubnet
-    )
-    $authorizedIPs = Get-AuthorizedIPs
-    if ($authorizedIPs -notcontains $newSubnet) {
-        $authorizedIPs += $newSubnet
-        $ipConfig = @{ipList = $authorizedIPs}
-        $ipConfig | ConvertTo-Json | Set-Content -Path $ipConfigPath -Encoding UTF8
-        Write-Host "已添加新授权网段：$newSubnet" -ForegroundColor Green
-    } else {
-        Write-Host "网段 $newSubnet 已授权，无需重复添加。" -ForegroundColor Cyan
+    param ([string]$newSubnet)
+    
+    $expiryDate = (Get-Date).AddYears(1).ToString("yyyy-MM-dd")
+    
+    try {
+        # 读取现有配置
+        $ipConfig = if (Test-Path $ipConfigPath) {
+            $encryptedContent = Get-Content $ipConfigPath -Raw
+            $decryptedContent = Unprotect-ConfigContent $encryptedContent
+            $decryptedContent | ConvertFrom-Json
+        }
+        else {
+            @{ ipList = @() }
+        }
+
+        # 检查是否已存在该网段
+        $existingIP = $ipConfig.ipList | Where-Object { $_.subnet -eq $newSubnet }
+        if ($existingIP) {
+            $existingIP.expiryDate = $expiryDate
+            Write-Host "网段 $newSubnet 授权已更新，新的到期日期：$expiryDate" -ForegroundColor Cyan
+        }
+        else {
+            $newIP = @{
+                subnet    = $newSubnet
+                expiryDate = $expiryDate
+                addedDate = (Get-Date).ToString("yyyy-MM-dd")
+            }
+            $ipConfig.ipList += $newIP
+            Write-Host "已添加新授权网段：$newSubnet，到期日期：$expiryDate" -ForegroundColor Green
+        }
+
+        # 加密并保存配置
+        $newContent = $ipConfig | ConvertTo-Json
+        $encryptedConfig = Protect-ConfigContent $newContent
+        $encryptedConfig | Set-Content -Path $ipConfigPath -Encoding UTF8
+        Set-SecureFilePermissions $ipConfigPath
+    }
+    catch {
+        Write-EventLog -LogName "Application" -Source "SecurityCheck" -EntryType Error -EventId 1005 -Message "添加授权网段时发生错误：$_"
+        Write-Host "添加授权网段时发生错误：$_" -ForegroundColor Red
     }
 }
 
-# 获取当前网段信息
-function Get-CurrentSubnet {
-    $ipAddress = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.PrefixOrigin -eq "Dhcp" -or $_.PrefixOrigin -eq "Manual" } | Select-Object -ExpandProperty IPAddress)[0]
-    $subnetMask = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.PrefixOrigin -eq "Dhcp" -or $_.PrefixOrigin -eq "Manual" } | Select-Object -ExpandProperty PrefixLength)[0]
-
-    if (-not $ipAddress) {
-        Write-Host "无法获取当前 IP 地址，请检查网络连接。" -ForegroundColor Red
-        Exit
-    }
-
-    # 计算网段
-    $ipParts = $ipAddress -split "\."
-    $subnetCIDR = "$($ipParts[0]).$($ipParts[1]).$($ipParts[2]).0/$subnetMask"
-    return $subnetCIDR
-}
-
-# 主逻辑：检查 IP 是否已授权
-$currentSubnet = Get-CurrentSubnet
-$authorizedIPs = Get-AuthorizedIPs
-
-if ($authorizedIPs -contains $currentSubnet) {
-    Write-Host "当前网段 ($currentSubnet) 已授权，开始执行安全检查。" -ForegroundColor Green
-} else {
-    # 如果未授权，提示输入授权密钥
-    $UserInputKey = Read-Host "请输入授权密钥"
-    if ($UserInputKey -eq $AuthorizedKey) {
-        Write-Host "授权成功，添加当前网段到授权列表。" -ForegroundColor Green
-        Add-AuthorizedIP -newSubnet $currentSubnet
-    } else {
-        Write-Host "授权失败，无法执行脚本。" -ForegroundColor Red
-        Exit
-    }
-}
-
+# 其他核心检查逻辑省略，继续添加时放在这里
 # ============================
 # 这里是原来的核心检查逻辑
 # ============================
@@ -661,3 +797,4 @@ if ($Results.Count -gt 0) {
     $Json = $Results | ConvertTo-Json -Depth 5 -Compress
     Send-CheckResult -JsonData $Json
 }
+
