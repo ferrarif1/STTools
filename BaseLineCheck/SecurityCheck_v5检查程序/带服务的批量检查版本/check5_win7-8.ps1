@@ -1,7 +1,7 @@
 
 # Windows 7/8 客户端安全检查脚本
 
-$ScriptPath = "C:\check5_win10-11.ps1"
+$ScriptPath = "C:\SecurityCheck_v5.exe"
 $UploadUrl = "http://172.16.1.20:8000/log"
 $FailCache = "C:\check_fail.json"
 
@@ -29,17 +29,18 @@ function Retry-FailedUpload {
 function Add-MonthlyTaskIfNotExists {
     $task = schtasks /Query /TN "MonthlyCheckTask" 2>$null
     if ($LASTEXITCODE -ne 0) {
-        schtasks /Create /SC MONTHLY /D 1 /TN "MonthlyCheckTask" /TR "powershell.exe -ExecutionPolicy Bypass -File `"C:\check5_win10-11.ps1`"" /ST 09:00
+        schtasks /Create /SC MONTHLY /D 1 /TN "MonthlyCheckTask" /TR "powershell.exe -ExecutionPolicy Bypass -File `"C:\SecurityCheck_v5.exe`"" /ST 09:00
     }
 }
 
 function Self-CopyIfNeeded {
     if ($MyInvocation.MyCommand.Path -ne $ScriptPath) {
-        Copy-Item -Path $MyInvocation.MyCommand.Path -Destination $ScriptPath -Force
+        Copy-Item -Path "$PSScriptRoot\SecurityCheck_v5.exe" -Destination $ScriptPath -Force
         Add-MonthlyTaskIfNotExists
         exit
     }
 }
+
 
 Self-CopyIfNeeded
 Retry-FailedUpload
