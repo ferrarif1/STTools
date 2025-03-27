@@ -1,4 +1,3 @@
-
 # Windows 10/11 客户端安全检查脚本
 
 $ScriptPath = "C:\SecurityCheck_v5.exe"
@@ -8,12 +7,36 @@ $FailCache = "C:\check_fail.json"
 function Send-CheckResult {
     param([string]$JsonData)
     try {
-        $response = Invoke-RestMethod -Uri $UploadUrl -Method POST -Body $JsonData -ContentType "application/json"
-        if ($response.status -ne "success") {
+        # 使用UTF8编码转换JSON数据
+        $utf8Bytes = [System.Text.Encoding]::UTF8.GetBytes($JsonData)
+        
+        # 创建Web请求
+        $request = [System.Net.WebRequest]::Create($UploadUrl)
+        $request.Method = "POST"
+        $request.ContentType = "application/json; charset=utf-8"
+        $request.ContentLength = $utf8Bytes.Length
+        
+        # 发送数据
+        $requestStream = $request.GetRequestStream()
+        $requestStream.Write($utf8Bytes, 0, $utf8Bytes.Length)
+        $requestStream.Close()
+        
+        # 获取响应
+        $response = $request.GetResponse()
+        $responseStream = $response.GetResponseStream()
+        $reader = New-Object System.IO.StreamReader($responseStream)
+        $responseText = $reader.ReadToEnd()
+        $reader.Close()
+        $response.Close()
+        
+        $responseJson = $responseText | ConvertFrom-Json
+        if ($responseJson.status -ne "success") {
             throw "Upload failed"
         }
+        
         if (Test-Path $FailCache) { Remove-Item $FailCache -Force }
     } catch {
+        Write-Host "上传失败: $_" -ForegroundColor Red
         Set-Content -Path $FailCache -Value $JsonData -Encoding UTF8
     }
 }
@@ -37,7 +60,7 @@ function Add-MonthlyTaskIfNotExists {
 
 function Self-CopyIfNeeded {
     if (-not (Test-Path $ScriptPath)) {
-        Copy-Item -Path "SecurityCheck_v5.exe" -Destination $ScriptPath -Force
+        Copy-Item -Path "./SecurityCheck_v5.exe" -Destination $ScriptPath -Force
         Add-MonthlyTaskIfNotExists
         exit
     }

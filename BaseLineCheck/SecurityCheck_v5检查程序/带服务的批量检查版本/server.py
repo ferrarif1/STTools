@@ -3,6 +3,7 @@ import json
 import os
 import time
 import pandas as pd
+import chardet
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MONITOR_DIR = os.path.join(BASE_DIR, 'Monitor')
@@ -19,14 +20,24 @@ class LogHandler(BaseHTTPRequestHandler):
 
         content_length = int(self.headers.get('Content-Length', 0))
         try:
-            raw_data = self.rfile.read(content_length).decode('utf-8')
+            # 先读取原始字节数据
+            raw_bytes = self.rfile.read(content_length)
+            
+            # 使用chardet检测编码
+            detection = chardet.detect(raw_bytes)
+            encoding = detection['encoding'] if detection['confidence'] > 0.7 else 'utf-8'
+            print(f"检测到编码: {encoding}, 可信度: {detection['confidence']}")
+            
+            # 使用检测到的编码解码
+            raw_data = raw_bytes.decode(encoding)
+            
             plugin_data = json.loads(raw_data)
             client_ip = self.client_address[0]
             timestamp = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
 
-            # 写入 txt 文件，使用 utf-8-sig 防止中文乱码
+            # 写入 txt 文件，使用 utf-8 编码保存
             txt_path = os.path.join(MONITOR_DIR, f"{client_ip}.txt")
-            with open(txt_path, 'a', encoding='utf-8-sig') as f:
+            with open(txt_path, 'a', encoding='utf-8') as f:
                 f.write(f"[{timestamp}] {json.dumps(plugin_data, ensure_ascii=False)}\n")
 
             # 合并写入 Excel
@@ -38,9 +49,11 @@ class LogHandler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(json.dumps({'status': 'success'}, ensure_ascii=False).encode('utf-8'))
 
-        except json.JSONDecodeError:
+        except json.JSONDecodeError as e:
+            print(f"JSON解析错误: {str(e)}, 原始数据: {raw_data[:100]}...")
             self.send_error(400, "Invalid JSON")
         except Exception as e:
+            print(f"服务器错误: {str(e)}")
             self.send_error(500, f"Server Error: {str(e)}")
 
     def append_to_excel(self, ip, timestamp, data):
