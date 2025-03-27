@@ -1,6 +1,6 @@
 # 🛡️ Windows安全基线检查工具 🔍
 
-[check5_Autherized.ps1授权版使用说明]()
+[check5_Autherized.ps1授权版使用说明](https://github.com/ferrarif1/STTools/blob/main/BaseLineCheck/SecurityCheck_v5%E6%A3%80%E6%9F%A5%E7%A8%8B%E5%BA%8F/%E5%B8%A6%E6%9C%8D%E5%8A%A1%E7%9A%84%E6%89%B9%E9%87%8F%E6%A3%80%E6%9F%A5%E7%89%88%E6%9C%AC/READMEAUTHORIZED.md)
 
 ## 🌟 项目概述
 
