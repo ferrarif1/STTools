@@ -109,14 +109,26 @@ try {
         if ($ftpService) {
             Write-ErrorMsg "检测到FTP服务 (FTPSVC) 已安装且状态为: $($ftpService.Status)"
             Write-Instruction "出于安全考虑，建议禁用FTP服务。请在【服务】管理器中将FTP服务设置为禁用。"
-        } else {
+        
+    $Results += @{
+        Item = "FTP服务"
+        Issue = "FTP 服务已安装，状态为 $($ftpService.Status)"
+        Suggestion = "请在【服务】中禁用 FTP 服务"
+    }
+} else {
             Write-Success "未检测到FTP服务 (FTPSVC) 安装，符合安全要求。"
         }
         
         if ($ftpPort) {
             Write-ErrorMsg "检测到TCP端口21（FTP默认端口）当前处于监听状态。"
             Write-Instruction "请检查是否有应用正在使用FTP端口，并停止相关服务。"
-        } else {
+        
+    $Results += @{
+        Item = "FTP端口"
+        Issue = "TCP 21 端口正在监听"
+        Suggestion = "请停止相关FTP服务或释放端口"
+    }
+} else {
             Write-Success "未检测到TCP端口21（FTP）正在使用。"
         }
         
@@ -124,7 +136,13 @@ try {
             Write-ErrorMsg "检测到允许FTP流量的防火墙入站规则："
             foreach ($rule in $ftpInboundRules) {
                 Write-Host "  - $($rule.DisplayName) (已启用)" -ForegroundColor Red
-            }
+            
+    $Results += @{
+        Item = "FTP防火墙规则"
+        Issue = "存在启用的FTP入站防火墙规则"
+        Suggestion = "请关闭这些规则或设置为阻止"
+    }
+}
             Write-Instruction "请进入【Windows Defender 防火墙】>【高级设置】禁用这些规则，或将其操作设置为阻止。"
         } else {
             Write-Success "未检测到允许FTP流量的防火墙入站规则。"
@@ -133,7 +151,13 @@ try {
         if ($ftpClientInstalled) {
             Write-ErrorMsg "FTP客户端功能已启用。"
             Write-Instruction "建议禁用FTP客户端功能。请在【控制面板】>【程序和功能】>【启用或关闭Windows功能】中取消勾选FTP客户端。"
-        } else {
+        
+    $Results += @{
+        Item = "FTP客户端"
+        Issue = "FTP客户端功能已启用"
+        Suggestion = "请在系统功能中取消 FTP 客户端 勾选"
+    }
+} else {
             Write-Success "FTP客户端功能未启用，符合安全要求。"
         }
         
@@ -194,7 +218,12 @@ try {
                 Write-Success "端口 $port 已被防火墙策略封禁（入站或出站）。"
             } else {
                 Write-ErrorMsg "端口 $port 未被防火墙策略封禁。"
-                Write-Instruction "请进入【控制面板】>【Windows Defender 防火墙】>【高级设置】，添加入站规则封禁该端口。"
+    Write-Instruction "请进入【控制面板】>【Windows Defender 防火墙】>【高级设置】，添加入站规则封禁该端口。"
+    $Results += @{
+        Item = "端口封禁"
+        Issue = "端口 $port 未封禁"
+        Suggestion = "请进入【控制面板】>【Windows Defender 防火墙】>【高级设置】，添加入站规则封禁该端口。"
+    }
             }
         } catch {
             Write-ErrorMsg "检测端口 $port 时发生异常: $_"
@@ -340,6 +369,7 @@ try {
     Write-Host "发生未捕获错误：$_" -ForegroundColor Red
     Read-Host "按回车键退出..."
 }
+
 # ========== 原始检查逻辑 END ==========
 
 if ($Results.Count -gt 0) {
