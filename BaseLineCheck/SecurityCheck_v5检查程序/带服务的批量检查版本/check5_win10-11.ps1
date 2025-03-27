@@ -1,7 +1,7 @@
 
 # Windows 10/11 客户端安全检查脚本
 
-$ScriptPath = "C:\check5_win10-11.ps1"
+$ScriptPath = "C:\SecurityCheck_v5.exe"
 $UploadUrl = "http://172.16.1.20:8000/log"
 $FailCache = "C:\check_fail.json"
 
