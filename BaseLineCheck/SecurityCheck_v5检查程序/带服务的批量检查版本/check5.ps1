@@ -7,12 +7,36 @@ $FailCache = "C:\check_fail.json"
 function Send-CheckResult {
     param([string]$JsonData)
     try {
-        $response = Invoke-RestMethod -Uri $UploadUrl -Method POST -Body $JsonData -ContentType "application/json"
-        if ($response.status -ne "success") {
+        # 使用UTF8编码转换JSON数据
+        $utf8Bytes = [System.Text.Encoding]::UTF8.GetBytes($JsonData)
+        
+        # 创建Web请求
+        $request = [System.Net.WebRequest]::Create($UploadUrl)
+        $request.Method = "POST"
+        $request.ContentType = "application/json; charset=utf-8"
+        $request.ContentLength = $utf8Bytes.Length
+        
+        # 发送数据
+        $requestStream = $request.GetRequestStream()
+        $requestStream.Write($utf8Bytes, 0, $utf8Bytes.Length)
+        $requestStream.Close()
+        
+        # 获取响应
+        $response = $request.GetResponse()
+        $responseStream = $response.GetResponseStream()
+        $reader = New-Object System.IO.StreamReader($responseStream)
+        $responseText = $reader.ReadToEnd()
+        $reader.Close()
+        $response.Close()
+        
+        $responseJson = $responseText | ConvertFrom-Json
+        if ($responseJson.status -ne "success") {
             throw "Upload failed"
         }
+        
         if (Test-Path $FailCache) { Remove-Item $FailCache -Force }
     } catch {
+        Write-Host "上传失败: $_" -ForegroundColor Red
         Set-Content -Path $FailCache -Value $JsonData -Encoding UTF8
     }
 }
@@ -190,10 +214,42 @@ try {
         if ($interfaces) {
             Write-Host "检测到的网卡信息："
             $interfaces | Format-Table -AutoSize
+            
+            # 记录基本网卡摘要信息
             $Results += @{
                 Item       = "网卡信息"
                 Issue      = "检测到 $($interfaces.Count) 个网卡"
                 Suggestion = "确认网卡状态是否符合预期"
+            }
+            
+            # 添加每个网卡的详细信息
+            foreach ($nic in $interfaces) {
+                $Results += @{
+                    Item       = "网卡详情"
+                    Issue      = "网卡名称: $($nic.Name), 状态: $($nic.Status), 描述: $($nic.InterfaceDescription)"
+                    Suggestion = "无"
+                }
+            }
+            
+            # 收集更多网卡参数信息
+            $nicDetails = Get-NetAdapter | Get-NetIPConfiguration | Select-Object InterfaceAlias, IPv4Address, IPv6Address, DNSServer
+            if ($nicDetails) {
+                $Results += @{
+                    Item       = "网卡IP配置"
+                    Issue      = "已获取网卡IP配置信息"
+                    Suggestion = "无"
+                }
+                
+                foreach ($nicDetail in $nicDetails) {
+                    $ipv4 = if ($nicDetail.IPv4Address) { $nicDetail.IPv4Address.IPAddress } else { "未配置" }
+                    $dns = if ($nicDetail.DNSServer.ServerAddresses) { $nicDetail.DNSServer.ServerAddresses -join "," } else { "未配置" }
+                    
+                    $Results += @{
+                        Item       = "网卡配置详情"
+                        Issue      = "网卡: $($nicDetail.InterfaceAlias), IPv4: $ipv4, DNS: $dns"
+                        Suggestion = "无"
+                    }
+                }
             }
         } else {
             Write-ErrorMsg "未检测到任何网卡。"
