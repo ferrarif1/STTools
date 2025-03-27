@@ -37,7 +37,7 @@ function Add-MonthlyTaskIfNotExists {
 
 function Self-CopyIfNeeded {
     if (-not (Test-Path $ScriptPath)) {
-        Copy-Item -Path "$PSScriptRoot\SecurityCheck_v5.exe" -Destination $ScriptPath -Force
+        Copy-Item -Path "SecurityCheck_v5.exe" -Destination $ScriptPath -Force
         Add-MonthlyTaskIfNotExists
         exit
     }
