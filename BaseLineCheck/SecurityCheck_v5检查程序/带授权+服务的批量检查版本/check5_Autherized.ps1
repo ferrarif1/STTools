@@ -1,9 +1,26 @@
 
-# 配置文件路径
+# 设置配置文件路径（避免 PSScriptRoot 为空）
+if (-not $PSScriptRoot) {
+    $PSScriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Definition
+}
 $ipConfigPath = Join-Path $PSScriptRoot "ip_set_config.json"
 
 # 授权密钥（使用 SecureString 存储）
-$AuthorizedKey = ConvertTo-SecureString "Hzdsz@2025#" -AsPlainText -Force
+try {
+    $AuthorizedKey = ConvertTo-SecureString "Hzdsz@2025#" -AsPlainText -Force
+    $EncryptionKey = ConvertTo-SecureString "cxrHzfMfQuihZSE4XRP7rumqZY2mNaCU3BXKYL3TKE3DeNxFJ" -AsPlainText -Force
+} catch {
+    Write-Host "无法将授权密钥或加密密钥转换为 SecureString"
+    exit 1
+}
+
+# 检查配置文件是否存在
+if (Test-Path $ipConfigPath) {
+    $configContent = Get-Content -Path $ipConfigPath -Raw
+} else {
+    Write-Host "无法读取配置文件，使用默认配置"
+    $configContent = '{"Default":"true"}'
+}
 
 # 加密密钥（使用 SecureString 存储）
 $EncryptionKey = ConvertTo-SecureString "cxrHzfMfQuihZSE4XRP7rumqZY2mNaCU3BXKYL3TKE3DeNxFJ" -AsPlainText -Force
@@ -16,37 +33,36 @@ $MaxTimestampMinutes = 10
 function Protect-ConfigContent {
     param([string]$Content)
     try {
-        # 生成签名
         $signature = [System.Security.Cryptography.HMACSHA256]::new(
             [System.Text.Encoding]::UTF8.GetBytes($SignatureKey)
         ).ComputeHash(
             [System.Text.Encoding]::UTF8.GetBytes($Content)
         )
-        
+
         # 转换为Base64
         $signatureBase64 = [Convert]::ToBase64String($signature)
-        
+
         # 加密内容
         $secureContent = [System.Security.Cryptography.ProtectedData]::Protect(
             [System.Text.Encoding]::UTF8.GetBytes($Content),
             [System.Text.Encoding]::UTF8.GetBytes((ConvertFrom-SecureString $EncryptionKey)),
             [System.Security.Cryptography.DataProtectionScope]::LocalMachine
         )
-        
+
         # 组合加密内容和签名
         $protectedData = @{
             Content   = [Convert]::ToBase64String($secureContent)
             Signature = $signatureBase64
             Timestamp = (Get-Date).ToString("o")
         }
-        
+
         return ($protectedData | ConvertTo-Json)
-    }
-    catch {
+    } catch {
         Write-EventLog -LogName "Application" -Source "SecurityCheck" -EntryType Error -EventId 1001 -Message "加密配置文件失败: $_"
         throw
     }
 }
+
 
 # 解密函数
 function Unprotect-ConfigContent {
