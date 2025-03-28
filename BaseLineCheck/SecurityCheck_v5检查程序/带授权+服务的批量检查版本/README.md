@@ -2,186 +2,147 @@
 
 ---
 
-### 📄 **1. 目标回顾**
-- **目标：** 运行 `check5_win10-11_updated.ps1` 时进行以下操作：
+### 📄 **1. 安装步骤**
+
+#### ⚡️ **重要：首次使用前必须执行以下步骤**
+
+1. **复制必要文件到 C 盘根目录**
+   ```
+   1. 复制 SecurityCheck_v5.exe 到 C:\
+   2. 复制 config.json 到 C:\
+   ```
+
+2. **确认文件位置**
+   - `C:\SecurityCheck_v5.exe`
+   - `C:\config.json`
+
+3. **验证 config.json 内容**
+   ```json
+   {
+       "scriptPath": "C:\\SecurityCheck_v5.exe",
+       "uploadUrl": "http://172.16.1.20:8000/log",
+       "failCache": "C:\\check_fail.json"
+   }
+   ```
+
+> ⚠️ **注意：** 必须将文件放在正确位置，否则程序将无法正常运行！
+
+### 📄 **2. 目标回顾**
+- **目标：** 运行 `SecurityCheck_v5.exe` 进行安全基线检查：
    - **首次授权：** 通过输入授权密钥，将当前网段记录到 `ip_set_config.json` 并加密，只有被授权的网段才能执行安全检查。
    - **后续运行：** 自动检测当前网段是否被授权，已授权则继续执行，否则要求重新输入密钥进行授权。
+   - **安全检查：** 执行全面的安全基线检查，包括FTP、网卡、端口、IPv6等多个方面。
 
 ---
 
-### 📚 **2. 文件结构说明**
-- `check5_win10-11_updated.ps1` - 主 PowerShell 脚本
-- `ip_set_config.json` - 存储已授权网段的加密配置文件，首次运行脚本时会自动创建
+### 📚 **3. 文件结构说明**
+- `SecurityCheck_v5.exe` - 主程序（打包后的执行文件）
+- `ip_set_config.json` - 存储已授权网段的加密配置文件（程序自动生成）
+- `config.json` - 配置文件（包含脚本路径、上传URL等配置）
 
 ---
 
-### ⚡️ **3. 第一次运行（授权网段）**
----
+### ⚡️ **4. 运行方式**
 
-#### ✅ **Step 1：运行脚本**
-- 以 **管理员权限** 运行 PowerShell：
-```powershell
-Set-ExecutionPolicy Bypass -Scope Process -Force
-```
-- 运行 `check5_win10-11_updated.ps1`：
-```powershell
-.\check5_win10-11_updated.ps1
-```
+#### ✅ **直接运行**
+- 双击运行 `SecurityCheck_v5.exe`
+- 首次运行需要管理员权限
 
----
-
-#### ✅ **Step 2：输入授权密钥**
-- **首次运行时：** 提示输入授权密钥。
-```powershell
-请输入授权密钥:
-```
-- 输入正确的密钥 `Hzdsz@2025#`（或已修改的密钥），密钥会进行验证：
-   - 如果密钥正确 ✅ -> 记录当前网段到 `ip_set_config.json` 并加密
-   - 如果密钥错误 ❌ -> 终止脚本运行
-```powershell
-授权成功，添加当前网段到授权列表。
+#### ✅ **命令行运行**
+```cmd
+SecurityCheck_v5.exe
 ```
 
----
+#### ✅ **定时任务运行**
+- 程序会自动创建每月执行的定时任务
+- 任务名称：MonthlyCheckTask
+- 执行时间：每月1号上午9点
 
-#### ✅ **Step 3：授权完成**
-- `ip_set_config.json` 文件在脚本目录下生成，已加密存储授权的网段信息。
+### 🔍 **5. 检查项目说明**
+1. **FTP服务与传输功能检查**
+   - FTP服务状态
+   - FTP客户端功能
+   - FTP端口（21）监听状态
+   - FTP防火墙规则
 
----
+2. **网卡信息检查**
+   - 网卡状态与配置
+   - IP配置信息
+   - 无线网卡状态
 
-### ⚡️ **4. 之后运行（已授权的网段自动识别）**
----
+3. **高危端口状态检测**
+   - 检查端口：22,23,135,137,138,139,445,455,3389,4899
+   - 防火墙规则检查
 
-#### ✅ **Step 1：再次运行脚本**
-- 重新运行 `check5_win10-11_updated.ps1` 时，自动检测当前网段。
-- 如果当前网段已经授权 ✅：
-```powershell
-当前网段 (192.168.1.0/24) 已授权，开始执行安全检查。
-```
-- 如果当前网段未授权 ❌，会提示重新输入密钥进行授权：
-```powershell
-请输入授权密钥:
-```
----
+4. **IPv6 禁用状态检查**
+   - 注册表配置检查
 
-### 🔐 **5. 如何手动修改或添加授权的网段**
----
+5. **高危漏洞修复检查**
+   - Windows更新情况
+   - 补丁安装状态
 
-#### ✅ **Step 1：运行脚本**
-- 运行 `check5_win10-11_updated.ps1` 并重新输入授权密钥：
-```powershell
-.\check5_win10-11_updated.ps1
-```
+6. **密码策略检查**
+   - 密码有效期
+   - 密码复杂度要求
 
-#### ✅ **Step 2：重新授权新网段**
-- 运行脚本时，在不同网段下重新运行脚本并输入授权密钥，系统会自动记录新的网段。
-```powershell
-授权成功，添加当前网段到授权列表。
-```
+7. **Guest用户状态检查**
+   - 账户启用状态
 
-#### ✅ **Step 3：检查授权配置**
-- 授权的网段信息存储在 `ip_set_config.json` 中，已加密，防止手动修改。
+8. **U盘自动播放功能检查**
+   - 注册表配置检查
 
----
+9. **Google浏览器版本检测**
+   - Chrome版本检查
+   - 更新建议
 
-### 📄 **6. 如何查看授权的网段**
----
-
-#### ✅ **Step 1：解密查看 `ip_set_config.json`**
-- 运行以下命令解密查看授权网段：
-```powershell
-$ipConfigPath = Join-Path $PSScriptRoot "ip_set_config.json"
-$encryptedContent = Get-Content $ipConfigPath -Raw
-$decryptedContent = Unprotect-ConfigContent $encryptedContent
-$decryptedContent | ConvertFrom-Json
-```
----
-
-#### ✅ **Step 2：查看网段内容**
-- 查看已授权的网段信息：
-```json
-{
-  "ipList": [
-    {
-      "subnet": "192.168.1.0/24",
-      "expiryDate": "2026-03-27",
-      "addedDate": "2025-03-27"
-    },
-    {
-      "subnet": "10.0.0.0/16",
-      "expiryDate": "2026-03-27",
-      "addedDate": "2025-03-27"
-    }
-  ]
-}
-```
----
-
-### 🛑 **7. 解除授权或重新授权**
----
-
-#### ✅ **Step 1：删除 `ip_set_config.json`**
-- 如果需要重新授权或删除现有网段，可以手动删除 `ip_set_config.json` 文件：
-```powershell
-Remove-Item -Path ".\ip_set_config.json" -Force
-```
-
-#### ✅ **Step 2：重新运行脚本进行授权**
-- 重新运行 `check5_win10-11_updated.ps1` 并输入密钥即可重新授权网段。
+10. **锁屏策略检查**
+    - 超时时间设置
+    - 密码保护状态
 
 ---
 
-### ⚙️ **8. 高级配置和自定义**
----
+### 📄 **6. 检查结果说明**
 
-✅ **修改授权密钥：**
-- 修改 `$AuthorizedKey` 的内容：
-```powershell
-$AuthorizedKey = ConvertTo-SecureString "新密钥123" -AsPlainText -Force
-```
+检查结果会以JSON格式保存，包含以下信息：
+- Item：检查项目名称
+- Issue：检查发现的问题或状态
+- Suggestion：修复建议
 
-✅ **修改加密密钥：**
-- 修改 `$EncryptionKey` 的内容：
-```powershell
-$EncryptionKey = ConvertTo-SecureString "新的加密密钥" -AsPlainText -Force
-```
-
-✅ **修改签名密钥：**
-- 修改 `$SignatureKey` 的内容：
-```powershell
-$SignatureKey = "新的签名密钥"
-```
-
-✅ **设置 IP 授权过期时间：**
-- 修改 `Add-AuthorizedIP` 函数中设置的过期时间（默认为 1 年）：
-```powershell
-$expiryDate = (Get-Date).AddYears(1).ToString("yyyy-MM-dd")
-```
-
-✅ **更改 `EventLog` 记录设置：**
-- 修改 `Write-EventLog` 记录的 `EventId`、`LogName` 和 `Source`。
----
-
-### 🚀 **9. 常见问题排查**
----
-
-#### ❗️ **Q1：出现授权失败？**
-- 确认输入的授权密钥正确，并且未更改 `$AuthorizedKey` 的值。
-- 检查 `ip_set_config.json` 是否已生成并加密。
-
-#### ❗️ **Q2：无法读取配置文件？**
-- 确认 `ip_set_config.json` 是否被系统或其他程序占用。
-- 尝试删除 `ip_set_config.json` 并重新授权。
-
-#### ❗️ **Q3：`EventLog` 无法记录？**
-- 需要以 **管理员权限** 运行 PowerShell 来记录 `EventLog`。
+检查完成后，结果会：
+1. 在控制台显示详细信息
+2. 上传到配置的服务器（通过 `config.json` 中的 `uploadUrl`）
+3. 如果上传失败，保存到本地缓存文件（`check_fail.json`）
 
 ---
 
-### 🎯 **总结：**
-- ✅ 第一次运行时需要输入授权密钥
-- ✅ 后续运行自动检测当前网段是否已授权
-- ✅ 可以随时删除 `ip_set_config.json` 重新授权
-- ✅ 添加了加密、签名验证、时间戳验证、EventLog 记录等防篡改机制
+### ⚠️ **7. 注意事项**
+1. 首次运行需要以管理员权限运行
+2. 程序会自动复制到配置指定的路径
+3. 自动创建定时任务
+4. 检查结果会自动上传，确保网络连接正常
+5. 如遇到"已阻止运行此程序"，请右键 -> 属性 -> 解除锁定
 
-如有问题或需要进一步优化，请随时联系我！🚀
+---
+
+### 🛟 **8. 故障排除**
+
+#### ❗️ **常见问题：**
+1. **程序无法运行**
+   - 确认是否以管理员权限运行
+   - 检查是否被杀毒软件拦截
+   - 确认文件是否被锁定
+
+2. **授权失败**
+   - 确认输入的授权密钥正确
+   - 检查 `ip_set_config.json` 是否被占用
+
+3. **结果上传失败**
+   - 检查网络连接
+   - 确认 `config.json` 中的 URL 配置正确
+   - 查看 `check_fail.json` 是否生成
+
+4. **定时任务未执行**
+   - 检查任务计划程序中的任务状态
+   - 确认程序路径是否正确
+
+如有问题或需要进一步支持，请联系技术支持！🚀
