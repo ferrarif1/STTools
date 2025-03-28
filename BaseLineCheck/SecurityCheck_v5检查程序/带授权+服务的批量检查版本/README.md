@@ -191,17 +191,23 @@ SecurityCheck_v5.exe
 - 权限设置失败时的降级处理
 
 #### 6. **数据结构**
-授权配置文件（`ip_set_config.json`）格式：
+授权配置文件（`ip_set_config.json`）格式，编码为base64：
 ```json
 {
-    "ipList": [
-        {
-            "subnet": "192.168.1.0/24",
-            "expiryDate": "2025-03-27",
-            "addedDate": "2024-03-27"
-        }
-    ]
+    "ipList":  [
+                   {
+                       "subnet":  "172.16.1.0/26",
+                       "addedDate":  "2025-03-28",
+                       "expiryDate":  "2026-03-28"
+                   }
+               ]
 }
+编码后：
+{
+    "Content":  "ew0KICAgICJpcExpc3QiOiAgWw0KICAgICAgICAgICAgICAgICAgIHsNCiAgICAgICAgICAgICAgICAgICAgICAgInN1Ym5ldCI6ICAiMTcyLjE2LjEuMC8yNiIsDQogICAgICAgICAgICAgICAgICAgICAgICJhZGRlZERhdGUiOiAgIjIwMjUtMDMtMjgiLA0KICAgICAgICAgICAgICAgICAgICAgICAiZXhwaXJ5RGF0ZSI6ICAiMjAyNi0wMy0yOCINCiAgICAgICAgICAgICAgICAgICB9DQogICAgICAgICAgICAgICBdDQp9",
+    "Timestamp":  "2025-03-28T16:50:16"
+}
+
 ```
 
 #### 7. **安全特性**
@@ -210,3 +216,4 @@ SecurityCheck_v5.exe
 - 时间戳验证机制
 - 授权有效期管理
 - 事件日志审计
+
