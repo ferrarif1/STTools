@@ -1,3 +1,10 @@
+# ********** 改base64为aes cbc算法前备份 ******
+
+# 密钥和安全设置
+$AuthorizedKey = ConvertTo-SecureString "Hzdsz@2025#" -AsPlainText -Force
+$EncryptionKey = ConvertTo-SecureString "cxrHzfMfQuihZSE4XRP7rumqZY2mNaCU3BXKYL3TKE3DeNxFJ" -AsPlainText -Force
+$MaxTimestampMinutes = 10
+
 # 脚本路径检测
 try {
     # 获取脚本所在目录
@@ -58,17 +65,6 @@ function Write-LogEntry {
     }
 }
 
-# 继续执行脚本其余部分...
-# 密钥和安全设置
-$AuthorizedKey = ConvertTo-SecureString "Hzdsz@2025#" -AsPlainText -Force
-$EncryptionKey = ConvertTo-SecureString "cxrHzfMfQuihZSE4XRP7rumqZY2mNaCU3BXKYL3TKE3DeNxFJ" -AsPlainText -Force
-$SignatureKey = "BQ2zbSKN1SYbNACjjmMM"
-$MaxTimestampMinutes = 10
-
-# 后续的加密函数和安全检查...
-
-# 设置加密密钥
-$EncryptionKey = ConvertTo-SecureString "cxrHzfMfQuihZSE4XRP7rumqZY2mNaCU3BXKYL3TKE3DeNxFJ" -AsPlainText -Force
 
 # 配置时间戳验证机制
 $MaxTimestampMinutes = 10

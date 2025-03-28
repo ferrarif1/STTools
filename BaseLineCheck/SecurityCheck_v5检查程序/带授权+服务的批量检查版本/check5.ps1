@@ -1,3 +1,8 @@
+# 密钥和安全设置
+$AuthorizedKey = ConvertTo-SecureString "Hzdsz@2025#" -AsPlainText -Force
+$EncryptionKey = ConvertTo-SecureString "cxrHzfMfQuihZSE4XRP7rumqZY2mNaCU3BXKYL3TKE3DeNxFJ" -AsPlainText -Force
+$MaxTimestampMinutes = 10
+
 # 脚本路径检测
 try {
     # 获取脚本所在目录
@@ -58,17 +63,6 @@ function Write-LogEntry {
     }
 }
 
-# 继续执行脚本其余部分...
-# 密钥和安全设置
-$AuthorizedKey = ConvertTo-SecureString "Hzdsz@2025#" -AsPlainText -Force
-$EncryptionKey = ConvertTo-SecureString "cxrHzfMfQuihZSE4XRP7rumqZY2mNaCU3BXKYL3TKE3DeNxFJ" -AsPlainText -Force
-$SignatureKey = "BQ2zbSKN1SYbNACjjmMM"
-$MaxTimestampMinutes = 10
-
-# 后续的加密函数和安全检查...
-
-# 设置加密密钥
-$EncryptionKey = ConvertTo-SecureString "cxrHzfMfQuihZSE4XRP7rumqZY2mNaCU3BXKYL3TKE3DeNxFJ" -AsPlainText -Force
 
 # 配置时间戳验证机制
 $MaxTimestampMinutes = 10
@@ -80,11 +74,32 @@ Add-Type -AssemblyName System.Security
 function Protect-ConfigContent {
     param([string]$Content)
     try {
-        # 创建一个不需要 ProtectedData 的简单保护机制
-        $bytes = [System.Text.Encoding]::UTF8.GetBytes($Content)
-        $encryptedBase64 = [Convert]::ToBase64String($bytes)
+        # 获取加密密钥的明文
+        $keyPlainText = Convert-SecureStringToPlainText -SecureString $EncryptionKey
+        $keyBytes = [System.Text.Encoding]::UTF8.GetBytes($keyPlainText)
         
-        # 创建带有统一格式时间戳的简单JSON结构
+        # 创建随机IV
+        $iv = New-Object byte[] 16
+        $rng = New-Object System.Security.Cryptography.RNGCryptoServiceProvider
+        $rng.GetBytes($iv)
+        
+        # 使用AES加密
+        $aes = [System.Security.Cryptography.Aes]::Create()
+        $aes.Key = $keyBytes[0..31] # 使用前32字节作为密钥
+        $aes.IV = $iv
+        $aes.Mode = [System.Security.Cryptography.CipherMode]::CBC
+        $aes.Padding = [System.Security.Cryptography.PaddingMode]::PKCS7
+        
+        # 加密内容
+        $contentBytes = [System.Text.Encoding]::UTF8.GetBytes($Content)
+        $encryptor = $aes.CreateEncryptor()
+        $encryptedBytes = $encryptor.TransformFinalBlock($contentBytes, 0, $contentBytes.Length)
+        
+        # 组合IV和加密后的内容
+        $combinedBytes = $iv + $encryptedBytes
+        $encryptedBase64 = [Convert]::ToBase64String($combinedBytes)
+        
+        # 创建带有时间戳的JSON结构
         $protectedData = @{
             Content = $encryptedBase64
             Timestamp = (Get-Date).ToString("yyyy-MM-ddTHH:mm:ss")
@@ -94,6 +109,9 @@ function Protect-ConfigContent {
     } catch {
         Write-Host "加密配置文件失败: $_" -ForegroundColor Red
         throw
+    } finally {
+        if ($aes) { $aes.Dispose() }
+        if ($rng) { $rng.Dispose() }
     }
 }
 
@@ -103,17 +121,39 @@ function Unprotect-ConfigContent {
     try {
         $protectedData = $ProtectedContent | ConvertFrom-Json
         
-        # 使用 try-catch 解析日期以处理格式问题
+        # 验证时间戳
         try {
             $timestamp = [DateTime]::ParseExact($protectedData.Timestamp, "yyyy-MM-ddTHH:mm:ss", $null)
+            $timeSpan = (Get-Date) - $timestamp
+            if ($timeSpan.TotalMinutes -gt $MaxTimestampMinutes) {
+                Write-Host "配置文件时间戳已过期" -ForegroundColor Yellow
+            }
         } catch {
-            # 如果解析失败，继续执行 - 跳过时间戳验证
             Write-Host "时间戳格式无效，跳过验证" -ForegroundColor Yellow
         }
         
-        # 解码内容
-        $decodedBytes = [Convert]::FromBase64String($protectedData.Content)
-        $decryptedContent = [System.Text.Encoding]::UTF8.GetString($decodedBytes)
+        # 获取加密密钥的明文
+        $keyPlainText = Convert-SecureStringToPlainText -SecureString $EncryptionKey
+        $keyBytes = [System.Text.Encoding]::UTF8.GetBytes($keyPlainText)
+        
+        # 解码Base64
+        $combinedBytes = [Convert]::FromBase64String($protectedData.Content)
+        
+        # 分离IV和加密内容
+        $iv = $combinedBytes[0..15]
+        $encryptedBytes = $combinedBytes[16..($combinedBytes.Length-1)]
+        
+        # 使用AES解密
+        $aes = [System.Security.Cryptography.Aes]::Create()
+        $aes.Key = $keyBytes[0..31] # 使用前32字节作为密钥
+        $aes.IV = $iv
+        $aes.Mode = [System.Security.Cryptography.CipherMode]::CBC
+        $aes.Padding = [System.Security.Cryptography.PaddingMode]::PKCS7
+        
+        # 解密
+        $decryptor = $aes.CreateDecryptor()
+        $decryptedBytes = $decryptor.TransformFinalBlock($encryptedBytes, 0, $encryptedBytes.Length)
+        $decryptedContent = [System.Text.Encoding]::UTF8.GetString($decryptedBytes)
         
         return $decryptedContent
     }
@@ -121,6 +161,9 @@ function Unprotect-ConfigContent {
         Write-Host "解密配置文件失败: $_" -ForegroundColor Red
         # 返回默认的空配置以避免程序崩溃
         return '{"ipList":[]}'
+    }
+    finally {
+        if ($aes) { $aes.Dispose() }
     }
 }
 
