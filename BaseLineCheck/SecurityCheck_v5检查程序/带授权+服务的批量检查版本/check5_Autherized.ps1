@@ -1,19 +1,19 @@
-# Simple script path detection
+# 脚本路径检测
 try {
-    # Get the directory this script is in
+    # 获取脚本所在目录
     $ScriptDirectory = [System.IO.Path]::GetDirectoryName($MyInvocation.MyCommand.Path)
     if ([string]::IsNullOrEmpty($ScriptDirectory)) {
         $ScriptDirectory = [System.IO.Directory]::GetCurrentDirectory()
     }
 } catch {
-    # Fallback to current directory
+    # 获取失败时使用当前目录
     $ScriptDirectory = [System.IO.Directory]::GetCurrentDirectory()
 }
 
-# Define the config file path
+# 定义配置文件路径
 $ipConfigPath = [System.IO.Path]::Combine($ScriptDirectory, "ip_set_config.json")
 
-# Function to convert SecureString to plain text - Move to top level
+# 将安全字符串转换为明文的函数 - 置于顶层
 function Convert-SecureStringToPlainText {
     param([System.Security.SecureString]$SecureString)
     
@@ -25,23 +25,23 @@ function Convert-SecureStringToPlainText {
     }
 }
 
-# Function to pause execution at the end - Move to top level
+# 脚本结束时暂停执行的函数 - 置于顶层
 function Pause-Script {
-    Write-Host "Press Enter to continue..." -ForegroundColor Yellow
+    Write-Host "按回车键继续..." -ForegroundColor Yellow
     Read-Host
 }
 
-# Create event log source if it doesn't exist
+# 检查并创建事件日志源（如不存在）
 if (-not [System.Diagnostics.EventLog]::SourceExists("SecurityCheck")) {
     try {
         [System.Diagnostics.EventLog]::CreateEventSource("SecurityCheck", "Application")
     } catch {
-        # Continue without event logging if we can't create the source
-        Write-Host "Unable to create event log source. Continuing without event logging."
+        # 如果无法创建事件源，继续执行但不记录日志
+        Write-Host "无法创建事件日志源，将继续执行但不记录日志。"
     }
 }
 
-# Log function that works with or without the event log
+# 支持有无事件日志的日志记录函数
 function Write-LogEntry {
     param(
         [string]$Message,
@@ -54,37 +54,37 @@ function Write-LogEntry {
     try {
         Write-EventLog -LogName "Application" -Source "SecurityCheck" -EventId $EventId -EntryType $EventType -Message $Message -ErrorAction SilentlyContinue
     } catch {
-        # Continue if event logging fails
+        # 日志记录失败时继续执行
     }
 }
 
-# Continue with rest of your script...
-# Keys and security settings
+# 继续执行脚本其余部分...
+# 密钥和安全设置
 $AuthorizedKey = ConvertTo-SecureString "Hzdsz@2025#" -AsPlainText -Force
 $EncryptionKey = ConvertTo-SecureString "cxrHzfMfQuihZSE4XRP7rumqZY2mNaCU3BXKYL3TKE3DeNxFJ" -AsPlainText -Force
 $SignatureKey = "BQ2zbSKN1SYbNACjjmMM"
 $MaxTimestampMinutes = 10
 
-# Rest of your encryption functions and security checks...
+# 后续的加密函数和安全检查...
 
-# Set encryption keys
+# 设置加密密钥
 $EncryptionKey = ConvertTo-SecureString "cxrHzfMfQuihZSE4XRP7rumqZY2mNaCU3BXKYL3TKE3DeNxFJ" -AsPlainText -Force
 
-# Configure timestamp validation mechanism
+# 配置时间戳验证机制
 $MaxTimestampMinutes = 10
 
-# Add the necessary assembly reference for ProtectedData class
+# 添加 ProtectedData 类所需的程序集引用
 Add-Type -AssemblyName System.Security
 
 # 加密函数
 function Protect-ConfigContent {
     param([string]$Content)
     try {
-        # Create a simpler protection mechanism that doesn't require ProtectedData
+        # 创建一个不需要 ProtectedData 的简单保护机制
         $bytes = [System.Text.Encoding]::UTF8.GetBytes($Content)
         $encryptedBase64 = [Convert]::ToBase64String($bytes)
         
-        # Create a simple JSON structure with timestamp in consistent format
+        # 创建带有统一格式时间戳的简单JSON结构
         $protectedData = @{
             Content = $encryptedBase64
             Timestamp = (Get-Date).ToString("yyyy-MM-ddTHH:mm:ss")
@@ -103,15 +103,15 @@ function Unprotect-ConfigContent {
     try {
         $protectedData = $ProtectedContent | ConvertFrom-Json
         
-        # Use a try-catch for parsing the date to handle format issues
+        # 使用 try-catch 解析日期以处理格式问题
         try {
             $timestamp = [DateTime]::ParseExact($protectedData.Timestamp, "yyyy-MM-ddTHH:mm:ss", $null)
         } catch {
-            # If parsing fails, just continue - we won't do timestamp validation
+            # 如果解析失败，继续执行 - 跳过时间戳验证
             Write-Host "时间戳格式无效，跳过验证" -ForegroundColor Yellow
         }
         
-        # Decode the content
+        # 解码内容
         $decodedBytes = [Convert]::FromBase64String($protectedData.Content)
         $decryptedContent = [System.Text.Encoding]::UTF8.GetString($decodedBytes)
         
@@ -119,7 +119,7 @@ function Unprotect-ConfigContent {
     }
     catch {
         Write-Host "解密配置文件失败: $_" -ForegroundColor Red
-        # Return a default empty configuration to avoid crashing
+        # 返回默认的空配置以避免程序崩溃
         return '{"ipList":[]}'
     }
 }
@@ -245,16 +245,16 @@ function Get-AuthorizedIPs {
     }
 }
 
-# Improved Add-AuthorizedIP function
+# 改进的添加授权IP函数
 function Add-AuthorizedIP {
     param ([string]$newSubnet)
     
     $expiryDate = (Get-Date).AddYears(1).ToString("yyyy-MM-dd")
     
     try {
-        # Create fresh configuration if needed
+        # 如果需要，创建新的配置文件
         if (-not (Test-Path $ipConfigPath)) {
-            # Create a default configuration structure
+            # 创建默认配置结构
             $defaultConfig = @{ 
                 ipList = @() 
             } | ConvertTo-Json -Depth 3
@@ -267,24 +267,24 @@ function Add-AuthorizedIP {
             }
         }
         
-        # Try to read existing configuration
+        # 尝试读取现有配置
         $encryptedContent = Get-Content $ipConfigPath -Raw -ErrorAction Stop
         $decryptedContent = Unprotect-ConfigContent $encryptedContent
         
-        # Parse JSON safely
+        # 安全解析JSON
         try {
             $ipConfig = $decryptedContent | ConvertFrom-Json
-            # Create ipList property if it doesn't exist
+            # 如果ipList属性不存在则创建
             if (-not ($ipConfig.PSObject.Properties | Where-Object { $_.Name -eq "ipList" })) {
                 $ipConfig = @{ ipList = @() } | ConvertTo-Json | ConvertFrom-Json
             }
         } catch {
-            # If parsing fails, create a new configuration
+            # 如果解析失败，创建新配置
             Write-Host "解析配置失败，创建新配置" -ForegroundColor Yellow
             $ipConfig = @{ ipList = @() } | ConvertTo-Json | ConvertFrom-Json
         }
         
-        # Convert ipList to array if it's not already
+        # 如果ipList不是数组，将其转换为数组
         $ipListArray = @()
         if ($ipConfig.ipList -ne $null) {
             foreach ($item in $ipConfig.ipList) {
@@ -292,7 +292,7 @@ function Add-AuthorizedIP {
             }
         }
         
-        # Check if subnet already exists in the array
+        # 检查网段是否已存在于数组中
         $existingIndex = -1
         for ($i = 0; $i -lt $ipListArray.Count; $i++) {
             if ($ipListArray[$i].subnet -eq $newSubnet) {
@@ -302,11 +302,11 @@ function Add-AuthorizedIP {
         }
         
         if ($existingIndex -ge 0) {
-            # Update existing subnet
+            # 更新现有网段
             $ipListArray[$existingIndex].expiryDate = $expiryDate
             Write-Host "网段 $newSubnet 授权已更新，新的到期日期：$expiryDate" -ForegroundColor Cyan
         } else {
-            # Add new subnet
+            # 添加新网段
             $newIP = @{
                 subnet = $newSubnet
                 expiryDate = $expiryDate
@@ -316,11 +316,11 @@ function Add-AuthorizedIP {
             Write-Host "已添加新授权网段：$newSubnet，到期日期：$expiryDate" -ForegroundColor Green
         }
         
-        # Create new config object with the array
+        # 使用数组创建新的配置对象
         $newConfig = @{ ipList = $ipListArray }
         $newConfigJson = $newConfig | ConvertTo-Json -Depth 3
         
-        # Encrypt and save
+        # 加密并保存
         $encryptedConfig = Protect-ConfigContent $newConfigJson
         $encryptedConfig | Set-Content -Path $ipConfigPath -Encoding UTF8 -Force
         
@@ -332,7 +332,7 @@ function Add-AuthorizedIP {
     } catch {
         Write-Host "添加网段时发生错误: $_" -ForegroundColor Red
         
-        # Emergency fallback - create a simple config
+        # 紧急备用方案 - 创建简单配置
         try {
             $fallbackConfig = @{ 
                 ipList = @(
@@ -356,7 +356,7 @@ function Add-AuthorizedIP {
     }
 }
 
-# Add error handling around key functions
+# 为关键函数添加错误处理
 try {
     # 获取当前网段信息
     $currentSubnet = Get-CurrentSubnet
@@ -383,7 +383,7 @@ try {
         }
     }
     
-    # Rest of your script continues...
+    # 脚本其余部分继续执行...
     
 } catch {
     Write-Host "发生错误: $_" -ForegroundColor Red
@@ -392,7 +392,7 @@ try {
     Exit
 }
 
-# Add this at the very end of your script to keep window open
+# 在脚本最后添加此行以保持窗口打开
 Pause-Script
 
 # Windows 10/11 客户端安全检查脚本
@@ -464,19 +464,14 @@ function Add-MonthlyTaskIfNotExists {
     }
 }
 
-function Self-CopyIfNeeded {
-    if (-not (Test-Path $ScriptPath)) {
-        Copy-Item -Path "SecurityCheck_v5.exe" -Destination $ScriptPath -Force
-        Add-MonthlyTaskIfNotExists
-        exit
-    }
-}
 
-Self-CopyIfNeeded
 Retry-FailedUpload
 
+
+# 创建空数组用于存储所有安全检查的结果
 $Results = @()
-# ========== 原始检查逻辑 ==========
+
+# ========== 检查逻辑 ==========
 # 在脚本最开头添加编码设置
 $OutputEncoding = [System.Text.Encoding]::UTF8
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
