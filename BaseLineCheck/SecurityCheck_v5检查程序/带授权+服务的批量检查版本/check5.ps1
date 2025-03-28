@@ -245,76 +245,113 @@ function Get-AuthorizedIPs {
     }
 }
 
-# 保存授权的 IP 网段
+# Improved Add-AuthorizedIP function
 function Add-AuthorizedIP {
     param ([string]$newSubnet)
     
     $expiryDate = (Get-Date).AddYears(1).ToString("yyyy-MM-dd")
     
     try {
-        # 初始化配置结构
+        # Create fresh configuration if needed
         if (-not (Test-Path $ipConfigPath)) {
-            # 创建新的加密配置文件
-            $newConfig = @{ 
+            # Create a default configuration structure
+            $defaultConfig = @{ 
                 ipList = @() 
             } | ConvertTo-Json -Depth 3
             
-            $encryptedConfig = Protect-ConfigContent $newConfig
+            $encryptedConfig = Protect-ConfigContent $defaultConfig
             $encryptedConfig | Set-Content -Path $ipConfigPath -Encoding UTF8
-            Set-SecureFilePermissions $ipConfigPath
+            
+            try { Set-SecureFilePermissions $ipConfigPath } catch { 
+                Write-Host "无法设置文件权限，继续执行" -ForegroundColor Yellow
+            }
         }
         
-        # 读取现有配置
-        $encryptedContent = Get-Content $ipConfigPath -Raw
+        # Try to read existing configuration
+        $encryptedContent = Get-Content $ipConfigPath -Raw -ErrorAction Stop
         $decryptedContent = Unprotect-ConfigContent $encryptedContent
-        $ipConfig = $decryptedContent | ConvertFrom-Json
         
-        # 确保 ipList 属性存在
-        if (-not $ipConfig.ipList) {
-            $ipConfig | Add-Member -MemberType NoteProperty -Name "ipList" -Value @()
+        # Parse JSON safely
+        try {
+            $ipConfig = $decryptedContent | ConvertFrom-Json
+            # Create ipList property if it doesn't exist
+            if (-not ($ipConfig.PSObject.Properties | Where-Object { $_.Name -eq "ipList" })) {
+                $ipConfig = @{ ipList = @() } | ConvertTo-Json | ConvertFrom-Json
+            }
+        } catch {
+            # If parsing fails, create a new configuration
+            Write-Host "解析配置失败，创建新配置" -ForegroundColor Yellow
+            $ipConfig = @{ ipList = @() } | ConvertTo-Json | ConvertFrom-Json
         }
-
-        # 检查是否已存在该网段
-        $existingIP = $ipConfig.ipList | Where-Object { $_.subnet -eq $newSubnet }
-        if ($existingIP) {
-            $existingIP.expiryDate = $expiryDate
+        
+        # Convert ipList to array if it's not already
+        $ipListArray = @()
+        if ($ipConfig.ipList -ne $null) {
+            foreach ($item in $ipConfig.ipList) {
+                $ipListArray += $item
+            }
+        }
+        
+        # Check if subnet already exists in the array
+        $existingIndex = -1
+        for ($i = 0; $i -lt $ipListArray.Count; $i++) {
+            if ($ipListArray[$i].subnet -eq $newSubnet) {
+                $existingIndex = $i
+                break
+            }
+        }
+        
+        if ($existingIndex -ge 0) {
+            # Update existing subnet
+            $ipListArray[$existingIndex].expiryDate = $expiryDate
             Write-Host "网段 $newSubnet 授权已更新，新的到期日期：$expiryDate" -ForegroundColor Cyan
-        }
-        else {
+        } else {
+            # Add new subnet
             $newIP = @{
                 subnet = $newSubnet
                 expiryDate = $expiryDate
                 addedDate = (Get-Date).ToString("yyyy-MM-dd")
             }
-            
-            # Add as an array element properly
-            if ($ipConfig.ipList -is [array]) {
-                $ipConfig.ipList += $newIP
-            } else {
-                $ipConfig.ipList = @($newIP)
-            }
-            
+            $ipListArray += $newIP
             Write-Host "已添加新授权网段：$newSubnet，到期日期：$expiryDate" -ForegroundColor Green
         }
-
-        # 加密并保存配置
-        $newContent = $ipConfig | ConvertTo-Json -Depth 3
-        $encryptedConfig = Protect-ConfigContent $newContent
-        $encryptedConfig | Set-Content -Path $ipConfigPath -Encoding UTF8
-        Set-SecureFilePermissions $ipConfigPath
-    }
-    catch {
-        Write-Host "添加授权网段时发生错误：$_" -ForegroundColor Red
         
-        # 创建默认的空配置文件作为应急
+        # Create new config object with the array
+        $newConfig = @{ ipList = $ipListArray }
+        $newConfigJson = $newConfig | ConvertTo-Json -Depth 3
+        
+        # Encrypt and save
+        $encryptedConfig = Protect-ConfigContent $newConfigJson
+        $encryptedConfig | Set-Content -Path $ipConfigPath -Encoding UTF8 -Force
+        
+        try { Set-SecureFilePermissions $ipConfigPath } catch { 
+            Write-Host "无法设置文件权限，继续执行" -ForegroundColor Yellow
+        }
+        
+        return $true
+    } catch {
+        Write-Host "添加网段时发生错误: $_" -ForegroundColor Red
+        
+        # Emergency fallback - create a simple config
         try {
-            $defaultConfig = @{ ipList = @( @{ subnet = $newSubnet; expiryDate = $expiryDate; addedDate = (Get-Date).ToString("yyyy-MM-dd") } ) } | ConvertTo-Json -Depth 3
-            $encryptedConfig = Protect-ConfigContent $defaultConfig
-            $encryptedConfig | Set-Content -Path $ipConfigPath -Encoding UTF8
-            Set-SecureFilePermissions $ipConfigPath
-            Write-Host "已创建应急配置文件并添加当前网段" -ForegroundColor Yellow
+            $fallbackConfig = @{ 
+                ipList = @(
+                    @{
+                        subnet = $newSubnet
+                        expiryDate = $expiryDate
+                        addedDate = (Get-Date).ToString("yyyy-MM-dd")
+                    }
+                ) 
+            }
+            
+            $fallbackJson = $fallbackConfig | ConvertTo-Json -Depth 3
+            $encryptedFallback = Protect-ConfigContent $fallbackJson
+            Set-Content -Path $ipConfigPath -Value $encryptedFallback -Encoding UTF8 -Force
+            Write-Host "已创建应急配置文件" -ForegroundColor Yellow
+            return $true
         } catch {
-            Write-Host "创建应急配置文件失败: $_" -ForegroundColor Red
+            Write-Host "创建应急配置失败: $_" -ForegroundColor Red
+            return $false
         }
     }
 }
