@@ -502,8 +502,7 @@ function Retry-FailedUpload {
     }
 }
 
-
-
+# 目前计划任务有错误 回去再改一下：
 # Corrected Monthly Task Function
 function Add-CorrectedMonthlyTaskIfNotExists {
     if (-not (Get-ScheduledTask -TaskName "MonthlyCheckTask" -ErrorAction SilentlyContinue)) {
@@ -527,7 +526,6 @@ Add-CorrectedMonthlyTaskIfNotExists
 Add-CorrectedHalfHourlyTaskForTesting
 
 Retry-FailedUpload
-
 
 # 创建空数组用于存储所有安全检查的结果
 $Results = @()
