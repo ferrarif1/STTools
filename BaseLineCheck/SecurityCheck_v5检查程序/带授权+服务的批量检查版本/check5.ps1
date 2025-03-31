@@ -501,33 +501,73 @@ function Retry-FailedUpload {
         Send-CheckResult -JsonData $cached
     }
 }
+# 需要管理员权限运行此脚本
 
 
+# # 修正后的每月任务（每月1号9点执行）
+# function Add-CorrectedMonthlyTaskIfNotExists {
+#     if (-not (Get-ScheduledTask -TaskName "MonthlyCheckTask" -ErrorAction SilentlyContinue)) {
+#         # 创建操作
+#         $action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$ScriptPath`""
+        
+#         # 创建触发器（每月第一天9:00）
+#         $trigger = New-ScheduledTaskTrigger -Monthly -DaysOfMonth 1 -At 9:00am
+        
+#         # 配置任务设置
+#         $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
+        
+#         # 配置用户上下文（SYSTEM账户）
+#         $principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
+        
+#         # 注册任务
+#         Register-ScheduledTask `
+#             -TaskName "MonthlyCheckTask" `
+#             -Action $action `
+#             -Trigger $trigger `
+#             -Principal $principal `
+#             -Settings $settings `
+#             -Force
+#     }
+# }
 
-# Corrected Monthly Task Function
-function Add-CorrectedMonthlyTaskIfNotExists {
-    if (-not (Get-ScheduledTask -TaskName "MonthlyCheckTask" -ErrorAction SilentlyContinue)) {
-        $action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-ExecutionPolicy Bypass -File `"$ScriptPath`""
-        $trigger = New-ScheduledTaskTrigger -MonthlyOnDay -DaysOfMonth 1 -At 9am
-        Register-ScheduledTask -TaskName "MonthlyCheckTask" -Action $action -Trigger $trigger -RunLevel Highest -Force
-    }
-}
-
-# Corrected Half-Hourly Task Function
+# 修正后的半小时任务（每30分钟重复执行）
 function Add-CorrectedHalfHourlyTaskForTesting {
     if (-not (Get-ScheduledTask -TaskName "HalfHourlyTestTask" -ErrorAction SilentlyContinue)) {
-        $action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-ExecutionPolicy Bypass -File `"$ScriptPath`""
-        $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).Date -RepetitionInterval (New-TimeSpan -Minutes 30) -RepetitionDuration (New-TimeSpan -Days 365)
-        Register-ScheduledTask -TaskName "HalfHourlyTestTask" -Action $action -Trigger $trigger -RunLevel Highest -Force
+        # 创建操作
+        $action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$ScriptPath`""
+        
+        # 创建触发器（立即开始，每30分钟重复，无限期持续）
+        $trigger = New-ScheduledTaskTrigger `
+            -Once `
+            -At (Get-Date).AddMinutes(1) `  # 1分钟后开始以避免立即触发
+            -RepetitionInterval (New-TimeSpan -Minutes 30) `
+            -RepetitionDuration ([System.TimeSpan]::MaxValue)
+        
+        # 配置任务设置
+        $settings = New-ScheduledTaskSettingsSet `
+            -DontStopIfGoingOnBatteries `
+            -AllowStartIfOnBatteries `
+            -MultipleInstances IgnoreNew
+        
+        # 配置用户上下文
+        $principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
+        
+        # 注册任务
+        Register-ScheduledTask `
+            -TaskName "HalfHourlyTestTask" `
+            -Action $action `
+            -Trigger $trigger `
+            -Principal $principal `
+            -Settings $settings `
+            -Force
     }
 }
 
-# Call the corrected functions to add tasks
-Add-CorrectedMonthlyTaskIfNotExists
+# 执行任务创建
+# Add-CorrectedMonthlyTaskIfNotExists
 Add-CorrectedHalfHourlyTaskForTesting
 
 Retry-FailedUpload
-
 
 # 创建空数组用于存储所有安全检查的结果
 $Results = @()
