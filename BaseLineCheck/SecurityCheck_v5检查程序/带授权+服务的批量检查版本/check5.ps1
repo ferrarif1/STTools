@@ -18,6 +18,7 @@ try {
 # 定义配置文件路径
 $ipConfigPath = [System.IO.Path]::Combine($ScriptDirectory, "ip_set_config.json")
 
+
 # 将安全字符串转换为明文的函数 - 置于顶层
 function Convert-SecureStringToPlainText {
     param([System.Security.SecureString]$SecureString)
@@ -101,6 +102,7 @@ function Protect-ConfigContent {
         
         # 创建带有时间戳的JSON结构
         $protectedData = @{
+            ipset = $Content
             Content = $encryptedBase64
             Timestamp = (Get-Date).ToString("yyyy-MM-ddTHH:mm:ss")
         }
@@ -281,6 +283,7 @@ function Get-AuthorizedIPs {
     else {
         # 创建新的加密配置文件
         $newConfig = @{ ipList = @() } | ConvertTo-Json
+        
         $encryptedConfig = Protect-ConfigContent $newConfig
         $encryptedConfig | Set-Content -Path $ipConfigPath -Encoding UTF8
         Set-SecureFilePermissions $ipConfigPath
