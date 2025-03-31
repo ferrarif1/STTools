@@ -2,9 +2,8 @@
 
 ---
 
-### 📄 **1. 安装步骤**
+### 📄 **1. 首次使用**
 
-#### ⚡️ **重要：首次使用前必须执行以下步骤**
 
 1. **复制必要文件到 C 盘根目录**
    ```
@@ -16,22 +15,37 @@
    - `C:\SecurityCheck_v5.exe`
    - `C:\config.json`
 
-3. **验证 config.json 内容**
+3. **编辑 config.json 内容 主要设置uploadUrl**
    ```json
    {
        "scriptPath": "C:\\SecurityCheck_v5.exe",
-       "uploadUrl": "http://172.16.1.20:8000/log",
+       "uploadUrl": "http://Your_server_ip:8000/log",
        "failCache": "C:\\check_fail.json"
    }
    ```
 
-> ⚠️ **注意：** 必须将文件放在正确位置，否则程序将无法正常运行！
+### 📄 **2. 授权所在网段**
+-  运行 `SecurityCheck_v5.exe` 进行安全基线检查：
+- **首次授权：** 通过输入授权密钥，自动识别以太网适配器的网段，将该网段记录到 `ip_set_config.json` 并加密，只有被授权的网段才能执行安全检查。
+  如下：
+```json
+{
+    "ipset":  "{
+      "ipList":  [  
+      {                   
+      "subnet":  "172.16.1.0/26",                    
+      "addedDate":  "2025-03-31",   
+      "expiryDate": "2026-03-31"                    
+      }       
+     ]}",
+    "Timestamp":  "2025-03-31T09:46:01",
+    "Content":  "wW059cCsXY3KVByipNqssT4xCQ3tpRkj4/tIiOEpzLWGVrTnxOX+AP6/xXFd/ixkl1Rog3+WDBJn8MItqSlaQ0N5hTaULHInv0cn1e7YoM2EBEpvXT+n8Qhs/25Upk2WqtvglEsxfIla3EhrBrC9TUO4RRQHdp3nDzp1XkictygKFBoA5UBOqZXlNhXRm+tVhHADl8YeTOUcpFL9NdGW+4n28l13uMtdBxf42b1P1WBVbCkJ4XP648IAOpfjhEIssb1TeDOmNM188KOqvMSNU+C1dIBwlbSsysrVZ/glmu1O8yUna5Lw5COscpuYz2v6SI9ZpXVlN42phEkTpBz6Kea9m7lp2LLkYiO92sbzpKI="
+}
 
-### 📄 **2. 目标回顾**
-- **目标：** 运行 `SecurityCheck_v5.exe` 进行安全基线检查：
-   - **首次授权：** 通过输入授权密钥，将当前网段记录到 `ip_set_config.json` 并加密，只有被授权的网段才能执行安全检查。
-   - **后续运行：** 自动检测当前网段是否被授权，已授权则继续执行，否则要求重新输入密钥进行授权。
-   - **安全检查：** 执行全面的安全基线检查，包括FTP、网卡、端口、IPv6等多个方面。
+  ```    
+
+- **后续运行：** 自动检测当前网段是否被授权，已授权则继续执行，否则要求重新输入密钥进行授权。
+- **安全检查：** 执行全面的安全基线检查，包括FTP、网卡、端口、IPv6等多个方面。
 
 ---
 
@@ -42,23 +56,8 @@
 
 ---
 
-### ⚡️ **4. 运行方式**
 
-#### ✅ **直接运行**
-- 双击运行 `SecurityCheck_v5.exe`
-- 首次运行需要管理员权限
-
-#### ✅ **命令行运行**
-```cmd
-SecurityCheck_v5.exe
-```
-
-#### ✅ **定时任务运行**
-- 程序会自动创建每月执行的定时任务
-- 任务名称：MonthlyCheckTask
-- 执行时间：每月1号上午9点
-
-### 🔍 **5. 检查项目说明**
+### 🔍 **4. 检查项目说明**
 1. **FTP服务与传输功能检查**
    - FTP服务状态
    - FTP客户端功能
@@ -101,7 +100,7 @@ SecurityCheck_v5.exe
 
 ---
 
-### 📄 **6. 检查结果说明**
+### 📄 **5. 检查结果说明**
 
 检查结果会以JSON格式保存，包含以下信息：
 - Item：检查项目名称
@@ -114,106 +113,4 @@ SecurityCheck_v5.exe
 3. 如果上传失败，保存到本地缓存文件（`check_fail.json`）
 
 ---
-
-### ⚠️ **7. 注意事项**
-1. 首次运行需要以管理员权限运行
-2. 程序会自动复制到配置指定的路径
-3. 自动创建定时任务
-4. 检查结果会自动上传，确保网络连接正常
-5. 如遇到"已阻止运行此程序"，请右键 -> 属性 -> 解除锁定
-
----
-
-### 🛟 **8. 故障排除**
-
-#### ❗️ **常见问题：**
-1. **程序无法运行**
-   - 确认是否以管理员权限运行
-   - 检查是否被杀毒软件拦截
-   - 确认文件是否被锁定
-
-2. **授权失败**
-   - 确认输入的授权密钥正确
-   - 检查 `ip_set_config.json` 是否被占用
-
-3. **结果上传失败**
-   - 检查网络连接
-   - 确认 `config.json` 中的 URL 配置正确
-   - 查看 `check_fail.json` 是否生成
-
-4. **定时任务未执行**
-   - 检查任务计划程序中的任务状态
-   - 确认程序路径是否正确
-
-如有问题或需要进一步支持，请联系技术支持！🚀
-
-### 🔍 **程序工作原理**
-
-#### 1. **初始化阶段**
-- 检测并获取程序运行目录
-- 定义配置文件路径（`ip_set_config.json`）
-- 初始化事件日志记录功能
-
-#### 2. **安全配置**
-- 使用预设的密钥进行授权验证：
-  ```
-  授权密钥：Hzdsz@2025#
-  加密密钥：用于配置文件加密
-  签名密钥：用于数据完整性验证
-  ```
-- 配置时间戳验证机制（10分钟有效期）
-
-#### 3. **配置文件加密机制**
-- 使用 Base64 编码进行基础加密
-- 添加时间戳用于验证数据有效性
-- 采用 JSON 结构存储加密后的数据
-
-#### 4. **网段授权流程**
-1. **获取当前网段**
-   - 优先使用以太网适配器
-   - 获取 IPv4 地址和子网掩码
-   - 计算 CIDR 格式的网段
-
-2. **授权文件管理**
-   - 设置严格的文件权限（仅当前用户和系统可访问）
-   - 自动创建或更新授权配置文件
-   - 支持配置文件损坏时的应急恢复
-
-3. **授权验证过程**
-   - 读取并解密授权配置
-   - 验证网段是否在授权列表中
-   - 检查授权是否过期（默认有效期1年）
-
-#### 5. **错误处理机制**
-- 完整的异常捕获和处理
-- 事件日志记录关键操作
-- 配置文件损坏时的自动修复
-- 权限设置失败时的降级处理
-
-#### 6. **数据结构**
-授权配置文件（`ip_set_config.json`）格式，编码为base64：
-```json
-{
-    "ipList":  [
-                   {
-                       "subnet":  "172.16.1.0/26",
-                       "addedDate":  "2025-03-28",
-                       "expiryDate":  "2026-03-28"
-                   }
-               ]
-}
-编码后：
-{
-    "Content":  "ew0KICAgICJpcExpc3QiOiAgWw0KICAgICAgICAgICAgICAgICAgIHsNCiAgICAgICAgICAgICAgICAgICAgICAgInN1Ym5ldCI6ICAiMTcyLjE2LjEuMC8yNiIsDQogICAgICAgICAgICAgICAgICAgICAgICJhZGRlZERhdGUiOiAgIjIwMjUtMDMtMjgiLA0KICAgICAgICAgICAgICAgICAgICAgICAiZXhwaXJ5RGF0ZSI6ICAiMjAyNi0wMy0yOCINCiAgICAgICAgICAgICAgICAgICB9DQogICAgICAgICAgICAgICBdDQp9",
-    "Timestamp":  "2025-03-28T16:50:16"
-}
-
-```
-
-#### 7. **安全特性**
-- 配置文件加密存储
-- 严格的文件权限控制
-- 时间戳验证机制
-- 授权有效期管理
-- 事件日志审计
 
