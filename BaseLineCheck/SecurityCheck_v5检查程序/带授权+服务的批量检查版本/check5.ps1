@@ -514,7 +514,7 @@ function Add-Task {
     if (-not (Get-ScheduledTask -TaskName "SecurityCheck_v5_Task" -ErrorAction SilentlyContinue)) {
         $Action = New-ScheduledTaskAction -Execute "C:\SecurityCheck_v5.exe"
         #每周二触发
-        $trigger = New-ScheduledTaskTrigger -Weekly -At "14:40" -DaysOfWeek Tuesday
+        $trigger = New-ScheduledTaskTrigger -Weekly -At "16:00" -DaysOfWeek Tuesday,Wednesday,Thursday,Friday
 
         #设置此计划任务仅对指定用户生效,同时指定任务优先级
         $Principal = New-ScheduledTaskPrincipal -UserId (Get-CimInstance -ClassName Win32_ComputerSystem | Select-Object -ExpandProperty UserName) -RunLevel Highest
@@ -1027,10 +1027,8 @@ try {
     Write-Seperator
 
     Write-Host "`n========== 检查结束 =========="
-    Read-Host "按回车键退出..."
 } catch {
     Write-Host "发生未捕获错误：$_" -ForegroundColor Red
-    Read-Host "按回车键退出..."
 }
 
 # ========== 原始检查逻辑 END ==========
@@ -1040,3 +1038,4 @@ if ($Results.Count -gt 0) {
     Send-CheckResult -JsonData $Json
 }
 
+Read-Host "按回车键退出..."
