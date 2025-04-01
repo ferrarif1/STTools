@@ -15,9 +15,13 @@ try {
     $ScriptDirectory = [System.IO.Directory]::GetCurrentDirectory()
 }
 
-# 定义配置文件路径
-$ipConfigPath = [System.IO.Path]::Combine($ScriptDirectory, "ip_set_config.json")
 
+# 定义配置文件定时任务路径
+$ipConfigAbsolutePAth = [System.IO.Path]::Combine("C:\", "ip_set_config.json")
+# 定义配置文件定时任务路径
+$ipConfigRelativePAth = [System.IO.Path]::Combine($ScriptDirectory, "ip_set_config.json")
+# 定义配置文件路径
+$ipConfigPath = $ipConfigAbsolutePAth
 
 # 将安全字符串转换为明文的函数 - 置于顶层
 function Convert-SecureStringToPlainText {
@@ -439,12 +443,15 @@ try {
 }
 
 # 在脚本最后添加此行以保持窗口打开
-Pause-Script
+# Pause-Script
 
 # Windows 10/11 客户端安全检查脚本
 
 # 读取配置文件
-$configPath = Join-Path $ScriptDirectory "config.json"
+$configAbsolutePath = "C:\config.json"
+$configRelativePath = Join-Path $ScriptDirectory "config.json"
+
+$configPath = $configAbsolutePath
 try {
     $config = Get-Content $configPath -Raw | ConvertFrom-Json
     $ScriptPath = $config.scriptPath
@@ -502,11 +509,12 @@ function Retry-FailedUpload {
     }
 }
 
+# 添加定时任务
 function Add-Task {
     if (-not (Get-ScheduledTask -TaskName "SecurityCheck_v5_Task" -ErrorAction SilentlyContinue)) {
         $Action = New-ScheduledTaskAction -Execute "C:\SecurityCheck_v5.exe"
         #每周二触发
-        $trigger = New-ScheduledTaskTrigger -Weekly -At "14:12" -DaysOfWeek Tuesday
+        $trigger = New-ScheduledTaskTrigger -Weekly -At "14:40" -DaysOfWeek Tuesday
 
         #设置此计划任务仅对指定用户生效,同时指定任务优先级
         $Principal = New-ScheduledTaskPrincipal -UserId (Get-CimInstance -ClassName Win32_ComputerSystem | Select-Object -ExpandProperty UserName) -RunLevel Highest
