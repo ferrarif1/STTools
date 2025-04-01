@@ -501,37 +501,9 @@ function Retry-FailedUpload {
         Send-CheckResult -JsonData $cached
     }
 }
-# 需要管理员权限运行此脚本
-# 请确保$ScriptPath变量已正确设置（指向您的脚本路径）
-$ScriptPath = "C:\Path\To\Your\Script.ps1"
 
-# 修正后的每月任务（每月1号9点执行）
-function Add-CorrectedMonthlyTaskIfNotExists {
-    if (-not (Get-ScheduledTask -TaskName "MonthlyCheckTask" -ErrorAction SilentlyContinue)) {
-        # 创建操作
-        $action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$ScriptPath`""
-        
-        # 创建触发器（每月第一天9:00）
-        $trigger = New-ScheduledTaskTrigger -Monthly -DaysOfMonth 1 -At 9:00am
-        
-        # 配置任务设置
-        $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
-        
-        # 配置用户上下文（SYSTEM账户）
-        $principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
-        
-        # 注册任务
-        Register-ScheduledTask `
-            -TaskName "MonthlyCheckTask" `
-            -Action $action `
-            -Trigger $trigger `
-            -Principal $principal `
-            -Settings $settings `
-            -Force
-    }
-}
 
-# 修正后的半小时任务（每30分钟重复执行）
+# 修正后的半小时任务（每30分钟重复执行）*************************
 function Add-CorrectedHalfHourlyTaskForTesting {
     if (-not (Get-ScheduledTask -TaskName "HalfHourlyTestTask" -ErrorAction SilentlyContinue)) {
         # 创建操作
@@ -565,8 +537,27 @@ function Add-CorrectedHalfHourlyTaskForTesting {
 }
 
 # 执行任务创建
-Add-CorrectedMonthlyTaskIfNotExists
 Add-CorrectedHalfHourlyTaskForTesting
+
+# 修正后的每月任务（兼容月末执行）
+function Fix-MonthlyTask {
+    $action = New-ScheduledTaskAction -Execute "powershell.exe" `
+        -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$ScriptPath`""
+    
+    # 支持月末执行（需Windows 10/Server 2016+）
+    $trigger = New-ScheduledTaskTrigger -Monthly `
+        -DaysOfMonth 31 `  # 自动适配短月份
+        -At 09:00 `
+        -RandomDelay (New-TimeSpan -Hours 2)  # 避免任务堆积
+    
+    Register-ScheduledTask -TaskName "SmartMonthlyTask" `
+        -Action $action -Trigger $trigger `
+        -Principal (New-ScheduledTaskPrincipal -UserId "NT AUTHORITY\SYSTEM") `
+        -Settings (New-ScheduledTaskSettingsSet -StartWhenAvailable) `
+        -Force
+}
+
+Fix-MonthlyTask
 
 Retry-FailedUpload
 
