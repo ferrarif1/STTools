@@ -1,0 +1,109 @@
+System: Microsoft Windows 7 旗舰版  
+ 6.1.7601
+
+7-Zip 18.06 (x64) - Version: 18.06 - Publisher: Igor Pavlov
+百度翻译 1.7.0 - Version: 1.7.0 - Publisher: Baidu Translate
+Bandizip - Version: 7.20 - Publisher: 
+有道云笔记 7.2.181 - Version: 7.2.181 - Publisher: 网易公司
+Git - Version: 2.42.0 - Publisher: The Git Development Community
+火绒安全软件 - Version: 5.0 - Publisher: 北京火绒网络科技有限公司
+集成客户端 - Version: V1.0.0_20200817 - Publisher: opsmgr
+PotPlayer-64 bit - Version: 231220 - Publisher: Kakao Corp.
+Lenovo Power Management Driver - Version: 1.67.12.24 - Publisher: Lenovo
+VLC media player - Version: 3.0.20 - Publisher: VideoLAN
+腾讯会议 - Version: 3.25.11.412 - Publisher: 腾讯科技(深圳)有限公司
+Python 3.8.10 Standard Library (64-bit) - Version: 3.8.10150.0 - Publisher: Python Software Foundation
+Python 3.8.10 Documentation (64-bit) - Version: 3.8.10150.0 - Publisher: Python Software Foundation
+Python 3.8.10 Development Libraries (64-bit) - Version: 3.8.10150.0 - Publisher: Python Software Foundation
+Python 3.8.10 Tcl/Tk Support (64-bit) - Version: 3.8.10150.0 - Publisher: Python Software Foundation
+Python 3.8.10 Executables (64-bit) - Version: 3.8.10150.0 - Publisher: Python Software Foundation
+NVIDIA Ansel - Version: 7.0.636.672 - Publisher: NVIDIA Corporation
+NVIDIA 控制面板 457.49 - Version: 457.49 - Publisher: NVIDIA Corporation
+NVIDIA 图形驱动程序 457.49 - Version: 457.49 - Publisher: NVIDIA Corporation
+NVIDIA Install Application - Version: 2.1002.346.0 - Publisher: NVIDIA Corporation
+NVIDIA Display MessageBus - Version: 457.49 - Publisher: NVIDIA Corporation
+NVIDIA Display Container - Version: 1.28 - Publisher: NVIDIA Corporation
+NVIDIA Display Container LS - Version: 1.28 - Publisher: NVIDIA Corporation
+NVIDIA Display Watchdog Plugin - Version: 1.28 - Publisher: NVIDIA Corporation
+NVIDIA Display Session Container - Version: 1.28 - Publisher: NVIDIA Corporation
+Python 3.8.10 Test Suite (64-bit) - Version: 3.8.10150.0 - Publisher: Python Software Foundation
+Python 3.8.10 Add to Path (64-bit) - Version: 3.8.10150.0 - Publisher: Python Software Foundation
+TortoiseGit 2.14.0.0 (64 bit) - Version: 2.14.0.0 - Publisher: TortoiseGit
+Python 3.8.10 Utility Scripts (64-bit) - Version: 3.8.10150.0 - Publisher: Python Software Foundation
+Python 3.8.10 Core Interpreter (64-bit) - Version: 3.8.10150.0 - Publisher: Python Software Foundation
+Python 3.8.10 pip Bootstrap (64-bit) - Version: 3.8.10150.0 - Publisher: Python Software Foundation
+aTrust - Version: 2.2.16.10 - Publisher: Sangfor Technologies Inc.
+aTrustHelperTool 1.0.0.8 - Version: 1.0.0.8 - Publisher: Sangfor
+Google Chrome - Version: 109.0.5414.120 - Publisher: Google LLC
+Npcap - Version: 1.71 - Publisher: Nmap Project
+向日葵 - Version: 13.1.0.48900 - Publisher: 上海贝锐信息科技股份有限公司
+PyCharm 2021.2.2 - Version: 212.5284.44 - Publisher: JetBrains s.r.o.
+Senseshield Virbox License Service - Version: 2.2.0.50322 - Publisher: Beijing Senseshield Technology Co.,Ltd
+搜狗输入法 14.2.0正式版 - Version: 14.2.0.8968 - Publisher: Sogou.com
+ToDesk - Version: 4.7.0.2 - Publisher: ToDesk Remote Desktop
+微信 - Version: 3.9.10.19 - Publisher: 腾讯科技(深圳)有限公司
+Wireshark 4.0.8 64-bit - Version: 4.0.8 - Publisher: The Wireshark developer community, https://www.wireshark.org
+Web Components - Version: 3.0.6.28 - Publisher: 
+铁路基本建设工程投资控制系统2020 - Version: 5.0.0 - Publisher: 铁路工程定额所
+Google Update Helper - Version: 1.3.30.3 - Publisher: Google Inc.
+Adobe Photoshop CC 2015 - Version: 16.0 - Publisher: Adobe Systems Incorporated
+设备网络搜索 - Version: 3.0.4.5 - Publisher: Hangzhou Hikvision Digital Technology Co., Ltd.
+LocalServiceComponents - Version: 1.0.0.88 - Publisher: 
+Python Launcher - Version: 3.8.7427.0 - Publisher: Python Software Foundation
+EV录屏 - Version: 5.0.3 - Publisher: 湖南一唯信息科技
+FrameWebControl - Version: 1.1.1 - Publisher: Supplier.
+WebBrowser-Plugin - Version: 1.5.0_0630 - Publisher: 
+CAD快速看图v6.0.1.94 - Version:  - Publisher: 广联达科技股份有限公司
+Intel(R) Processor Graphics - Version: 20.19.15.4703 - Publisher: Intel Corporation
+CentralWorkstation - Version: 2.8.3.0920 - Publisher: hikvision
+阿里云盘 - Version: 4.12.0 - Publisher: Alibaba Group
+GitHub Desktop - Version: 3.2.9 - Publisher: GitHub, Inc.
+WPS Office (12.1.0.16729) - Version: 12.1.0.16729 - Publisher: Kingsoft Corp.
+Python 3.8.10 (64-bit) - Version: 3.8.10150.0 - Publisher: Python Software Foundation
+7-Zip 18.06 (x64) - Version: 18.06 - Publisher: Igor Pavlov
+百度翻译 1.7.0 - Version: 1.7.0 - Publisher: Baidu Translate
+Bandizip - Version: 7.20 - Publisher: 
+有道云笔记 7.2.181 - Version: 7.2.181 - Publisher: 网易公司
+Git - Version: 2.42.0 - Publisher: The Git Development Community
+火绒安全软件 - Version: 5.0 - Publisher: 北京火绒网络科技有限公司
+集成客户端 - Version: V1.0.0_20200817 - Publisher: opsmgr
+PotPlayer-64 bit - Version: 231220 - Publisher: Kakao Corp.
+Lenovo Power Management Driver - Version: 1.67.12.24 - Publisher: Lenovo
+VLC media player - Version: 3.0.20 - Publisher: VideoLAN
+腾讯会议 - Version: 3.25.11.412 - Publisher: 腾讯科技(深圳)有限公司
+NVIDIA Ansel - Version: 7.0.636.672 - Publisher: NVIDIA Corporation
+NVIDIA 控制面板 457.49 - Version: 457.49 - Publisher: NVIDIA Corporation
+NVIDIA 图形驱动程序 457.49 - Version: 457.49 - Publisher: NVIDIA Corporation
+NVIDIA Install Application - Version: 2.1002.346.0 - Publisher: NVIDIA Corporation
+NVIDIA Display MessageBus - Version: 457.49 - Publisher: NVIDIA Corporation
+NVIDIA Display Container - Version: 1.28 - Publisher: NVIDIA Corporation
+NVIDIA Display Container LS - Version: 1.28 - Publisher: NVIDIA Corporation
+NVIDIA Display Watchdog Plugin - Version: 1.28 - Publisher: NVIDIA Corporation
+NVIDIA Display Session Container - Version: 1.28 - Publisher: NVIDIA Corporation
+TortoiseGit 2.14.0.0 (64 bit) - Version: 2.14.0.0 - Publisher: TortoiseGit
+aTrust - Version: 2.2.16.10 - Publisher: Sangfor Technologies Inc.
+aTrustHelperTool 1.0.0.8 - Version: 1.0.0.8 - Publisher: Sangfor
+Google Chrome - Version: 109.0.5414.120 - Publisher: Google LLC
+Npcap - Version: 1.71 - Publisher: Nmap Project
+向日葵 - Version: 13.1.0.48900 - Publisher: 上海贝锐信息科技股份有限公司
+PyCharm 2021.2.2 - Version: 212.5284.44 - Publisher: JetBrains s.r.o.
+Senseshield Virbox License Service - Version: 2.2.0.50322 - Publisher: Beijing Senseshield Technology Co.,Ltd
+搜狗输入法 14.2.0正式版 - Version: 14.2.0.8968 - Publisher: Sogou.com
+ToDesk - Version: 4.7.0.2 - Publisher: ToDesk Remote Desktop
+微信 - Version: 3.9.10.19 - Publisher: 腾讯科技(深圳)有限公司
+Wireshark 4.0.8 64-bit - Version: 4.0.8 - Publisher: The Wireshark developer community, https://www.wireshark.org
+Web Components - Version: 3.0.6.28 - Publisher: 
+铁路基本建设工程投资控制系统2020 - Version: 5.0.0 - Publisher: 铁路工程定额所
+Google Update Helper - Version: 1.3.30.3 - Publisher: Google Inc.
+Adobe Photoshop CC 2015 - Version: 16.0 - Publisher: Adobe Systems Incorporated
+设备网络搜索 - Version: 3.0.4.5 - Publisher: Hangzhou Hikvision Digital Technology Co., Ltd.
+LocalServiceComponents - Version: 1.0.0.88 - Publisher: 
+EV录屏 - Version: 5.0.3 - Publisher: 湖南一唯信息科技
+FrameWebControl - Version: 1.1.1 - Publisher: Supplier.
+WebBrowser-Plugin - Version: 1.5.0_0630 - Publisher: 
+CAD快速看图v6.0.1.94 - Version:  - Publisher: 广联达科技股份有限公司
+Intel(R) Processor Graphics - Version: 20.19.15.4703 - Publisher: Intel Corporation
+CentralWorkstation - Version: 2.8.3.0920 - Publisher: hikvision
+阿里云盘 - Version: 4.12.0 - Publisher: Alibaba Group
+GitHub Desktop - Version: 3.2.9 - Publisher: GitHub, Inc.
+WPS Office (12.1.0.16729) - Version: 12.1.0.16729 - Publisher: Kingsoft Corp.
