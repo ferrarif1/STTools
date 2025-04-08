@@ -61,6 +61,7 @@ class LogHandler(BaseHTTPRequestHandler):
 
         if isinstance(data, dict):
             record.update(data)
+            df_new = pd.DataFrame([record])
         elif isinstance(data, list):
             # 多条结构化结果：每一项单独成行
             df_list = []

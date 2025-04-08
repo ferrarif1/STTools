@@ -1,5 +1,6 @@
 1.如果安装时报错缺少其他依赖，需在联网环境重新下载完整依赖树
 pip download pip setuptools wheel -d ./offline_pip --no-binary :all:
+pip download openpyxl -d ./offline_pip
 
 2.离线安装 pip
 在离线机器上执行以下命令：
