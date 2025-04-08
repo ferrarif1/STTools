@@ -453,9 +453,9 @@ try {
 } catch {
     Write-Host "无法读取配置文件，使用默认配置" -ForegroundColor Yellow
     # 默认配置
-    $ScriptPath = "C:\SecurityCheck_v5.exe"
+    $ScriptPath = "SecurityCheck_v5.exe"
     $UploadUrl = "http://10.136.72.59:8000/log"
-    $FailCache = "C:\check_fail.json"
+    $FailCache = "check_fail.json"
 }
 
 function Send-CheckResult {
@@ -538,27 +538,9 @@ function Add-CorrectedHalfHourlyTaskForTesting {
 }
 
 # 执行任务创建
-Add-CorrectedHalfHourlyTaskForTesting
+# Add-CorrectedHalfHourlyTaskForTesting
 
-# 修正后的每月任务（兼容月末执行）
-function Fix-MonthlyTask {
-    $action = New-ScheduledTaskAction -Execute "powershell.exe" `
-        -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$ScriptPath`""
-    
-    # 支持月末执行（需Windows 10/Server 2016+）
-    $trigger = New-ScheduledTaskTrigger -Monthly `
-        -DaysOfMonth 31 `  # 自动适配短月份
-        -At 09:00 `
-        -RandomDelay (New-TimeSpan -Hours 2)  # 避免任务堆积
-    
-    Register-ScheduledTask -TaskName "SmartMonthlyTask" `
-        -Action $action -Trigger $trigger `
-        -Principal (New-ScheduledTaskPrincipal -UserId "NT AUTHORITY\SYSTEM") `
-        -Settings (New-ScheduledTaskSettingsSet -StartWhenAvailable) `
-        -Force
-}
 
-Fix-MonthlyTask
 
 Retry-FailedUpload
 
@@ -1067,6 +1049,7 @@ try {
 
 if ($Results.Count -gt 0) {
     $Json = $Results | ConvertTo-Json -Depth 5 -Compress
+    Write-Host "上传地址:$UploadUrl"
     Send-CheckResult -JsonData $Json
 }
 
