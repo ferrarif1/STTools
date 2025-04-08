@@ -4,106 +4,6 @@ System: Microsoft Windows 11 家庭中文版
 Cherry Studio - Version: 1.0.6 - Publisher: kangfenmao@qq.com
 7-Zip 24.09 (x64) - Version: 24.09 - Publisher: Igor Pavlov
 Tabby 1.0.215 - Version: 1.0.215 - Publisher: Eugene Pankov
-Anaconda3 2023.09-0 (Python 3.11.5 64-bit) - Version: 2023.09-0 - Publisher: Anaconda, Inc.
-Android Studio - Version: 2023.1 - Publisher: Google LLC
-Docker Desktop - Version: 4.25.1 - Publisher: Docker Inc.
-Git - Version: 2.48.1 - Publisher: The Git Development Community
-HP Documentation - Version: 1.0.0.1 - Publisher: HP Inc.
-Miniconda3 py39_23.10.0-1 (Python 3.9.18 64-bit) - Version: py39_23.10.0-1 - Publisher: Anaconda, Inc.
-微软OfficePLUS - Version: 3.5.0.48184 - Publisher: Microsoft Corporation
-MuMu模拟器12 - Version: 4.1.13.3607 - Publisher: Netease
-PremiumSoft Navicat Premium 17.0 - Version: 17.0.4 - Publisher: PremiumSoft CyberTech Ltd.
-Microsoft Office 专业增强版 2019 - zh-cn - Version: 16.0.18623.20156 - Publisher: Microsoft Corporation
-Microsoft Office 专业增强版 2021 - zh-cn - Version: 16.0.18623.20156 - Publisher: Microsoft Corporation
-USBPcap 1.5.4.0 - Version: 1.5.4.0 - Publisher: Tomasz Mon
-VLC media player - Version: 3.0.18 - Publisher: VideoLAN
-腾讯会议 - Version: 3.31.2.441 - Publisher: 腾讯科技(深圳)有限公司
-WinRAR 7.00 (64-位) - Version: 7.00.0 - Publisher: win.rar GmbH
-Wireshark 4.2.4 x64 - Version: 4.2.4 - Publisher: The Wireshark developer community, https://www.wireshark.org
-IIS Express Application Compatibility Database for x64 - Version:  - Publisher: 
-VMware Workstation - Version: 17.0.0 - Publisher: VMware, Inc.
-Python 3.11.8 Standard Library (64-bit) - Version: 3.11.8150.0 - Publisher: Python Software Foundation
-Python 3.11.8 Development Libraries (64-bit) - Version: 3.11.8150.0 - Publisher: Python Software Foundation
-Python 3.11.8 Executables (64-bit) - Version: 3.11.8150.0 - Publisher: Python Software Foundation
-eNSP V1.3.00.100 - Version: 1.3.00.100 - Publisher: Huawei Technologies Co., Ltd.
-VanDyke Software SecureCRT 9.0 - Version: 9.0.0 - Publisher: VanDyke Software, Inc.
-Java(TM) SE Development Kit 21.0.2 (64-bit) - Version: 21.0.2.0 - Publisher: Oracle Corporation
-64 Bit HP CIO Components Installer - Version: 22.2.1 - Publisher: HP Inc.
-Python 3.11.8 Core Interpreter (64-bit) - Version: 3.11.8150.0 - Publisher: Python Software Foundation
-HP Unified IO - Version: 2.0.0.434 - Publisher: HP
-Charles 4.6.5 - Version: 4.6.5.0 - Publisher: XK72 Ltd
-Go Programming Language amd64 go1.21.4 - Version: 1.21.4 - Publisher: https://go.dev
-Application Verifier x64 External Package - Version: 10.1.19041.685 - Publisher: Microsoft
-Python 3.11.8 Tcl/Tk Support (64-bit) - Version: 3.11.8150.0 - Publisher: Python Software Foundation
-Office 16 Click-to-Run Licensing Component - Version: 16.0.18623.20156 - Publisher: Microsoft Corporation
-Office 16 Click-to-Run Extensibility Component - Version: 16.0.18623.20156 - Publisher: Microsoft Corporation
-Office 16 Click-to-Run Localization Component - Version: 16.0.18623.20156 - Publisher: Microsoft Corporation
-Python 3.11.8 Utility Scripts (64-bit) - Version: 3.11.8150.0 - Publisher: Python Software Foundation
-PuTTY release 0.80 (64-bit) - Version: 0.80.0.0 - Publisher: Simon Tatham
-Python 3.11.8 Documentation (64-bit) - Version: 3.11.8150.0 - Publisher: Python Software Foundation
-Oracle VM VirtualBox 5.2.44 - Version: 5.2.44 - Publisher: Oracle Corporation
-IIS Express Application Compatibility Database for x86 - Version:  - Publisher: 
-Python 3.11.8 Test Suite (64-bit) - Version: 3.11.8150.0 - Publisher: Python Software Foundation
-Application Verifier x64 External Package (DesktopEditions) - Version: 10.1.22621.1778 - Publisher: Microsoft
-Application Verifier x64 External Package (OnecoreUAP) - Version: 10.1.22621.1778 - Publisher: Microsoft
-CMake - Version: 3.29.0 - Publisher: Kitware
-Common Desktop Agent - Version: 1.62.0 - Publisher: OEM
-Node.js - Version: 18.18.0 - Publisher: Node.js Foundation
-Python 3.11.8 pip Bootstrap (64-bit) - Version: 3.11.8150.0 - Publisher: Python Software Foundation
-Tenable Nessus (x64) - Version: 10.7.3.20038 - Publisher: Tenable, Inc.
-Microsoft Build of OpenJDK with Hotspot 11.0.16.1+1 (x64) - Version: 11.0.16.101 - Publisher: Microsoft
-Java(TM) SE Development Kit 11.0.22 (64-bit) - Version: 11.0.22.0 - Publisher: Oracle Corporation
-Python 3.11.8 Add to Path (64-bit) - Version: 3.11.8150.0 - Publisher: Python Software Foundation
-Wampserver64 3.3.5 - Version: 3.3.5 - Publisher: Dominique Ottello alias Otomatic
-Advanced BAT to EXE Converter v4.62 - Version:  - Publisher: 
-GNS3 - Version: 3.0.0b2 - Publisher: GNS3 Technology Inc.
-Google Chrome - Version: 134.0.6998.179 - Publisher: Google LLC
-HP LaserJet MFP M436 - Version: V1.14 (2023/4/13) - Publisher: HP Development Company, L.P.
-HP M436 Scan - Version: 1.06.67 () - Publisher: Hewlett-Packard Company
-HP MFP Scan to PC Setup - Version: 1.03.04.05 () - Publisher: Hewlett-Packard Company
-HP Scan Process Machine - Version: 1.03.05.30 - Publisher: HP Development Company, L.P.
-雷电模拟器 - Version: 9.0.66 - Publisher: ChangZhi Co.,Ltd.
-Nmap 7.94 - Version: 7.94 - Publisher: Nmap Project
-Npcap - Version: 1.79 - Publisher: Nmap Project
-腾讯电脑管家 - Version: 17.4.26613.206 - Publisher: 腾讯科技(深圳)有限公司
-迅雷 - Version: 12.1.7.2810 - Publisher: 迅雷网络技术有限公司
-ToDesk - Version: 4.7.6.3 - Publisher: Hainan YouQu Technology Co., Ltd
-VLC media player - Version: 3.0.10 - Publisher: VideoLAN
-微信 - Version: 3.9.12.51 - Publisher: 腾讯科技(深圳)有限公司
-Wireshark 4.4.2 x64 - Version: 4.4.2 - Publisher: The Wireshark developer community, https://www.wireshark.org
-WPTx64 (DesktopEditions) - Version: 10.1.22621.1778 - Publisher: Microsoft
-FrameWebControl - Version: 1.1.0_1010 - Publisher: Supplier.
-Windows SDK EULA - Version: 10.1.22621.1778 - Publisher: Microsoft Corporations
-Python Launcher - Version: 3.12.150.0 - Publisher: Python Software Foundation
-迈克菲联网顾问 - Version: 4.1.1.1019 - Publisher: McAfee, LLC
-嗨格式录屏大师 - Version: 3.52.2247.335 - Publisher: Auntec Co., Ltd.
-InstallCert_v1 version 1.0 - Version: 1.0 - Publisher: 
-HP Connection Optimizer - Version: 2.0.19.0 - Publisher: HP Inc
-WPT Redistributables - Version: 10.1.22621.1778 - Publisher: Microsoft
-WPTx64 (OnecoreUAP) - Version: 10.1.22621.1778 - Publisher: Microsoft
-Windows SDK EULA - Version: 10.1.19041.685 - Publisher: Microsoft Corporations
-FrameWebControl - Version: 1.1.1 - Publisher: Supplier.
-WebBrowser-Plugin - Version: 1.5.0_0630 - Publisher: 
-Kits Configuration Installer - Version: 10.1.19041.685 - Publisher: Microsoft
-HP Unified IO - Version: 2.0.0.434 - Publisher: HP
-百度网盘 - Version: 7.54.0 - Publisher: 北京度友科技有限公司
-Gmail - Version: 1.0 - Publisher: Google\Chrome
-表格 - Version: 1.0 - Publisher: Google\Chrome
-Cursor 0.45.14 - Version: 0.45.14 - Publisher: Cursor AI, Inc.
-幻灯片 - Version: 1.0 - Publisher: Google\Chrome
-Google 文档 - Version: 1.0 - Publisher: Google\Chrome
-Google 云端硬盘 - Version: 1.0 - Publisher: Google\Chrome
-Burp Suite Community Edition 2024.10.3 - Version: 2024.10.3 - Publisher: PortSwigger Web Security
-Obsidian - Version: 1.5.8 - Publisher: Obsidian
-GitHub Desktop - Version: 3.4.18 - Publisher: GitHub, Inc.
-WPS Office (12.1.0.20784) - Version: 12.1.0.20784 - Publisher: Kingsoft Corp.
-Python 3.11.8 (64-bit) - Version: 3.11.8150.0 - Publisher: Python Software Foundation
-Ollama version 0.3.6 - Version: 0.3.6 - Publisher: Ollama
-Cursor (User) - Version: 0.46.8 - Publisher: Anysphere
-夸克 - Version: 2.4.5.292 - Publisher: 广州市动悦信息技术有限公司
-Cherry Studio - Version: 1.0.6 - Publisher: kangfenmao@qq.com
-7-Zip 24.09 (x64) - Version: 24.09 - Publisher: Igor Pavlov
-Tabby 1.0.215 - Version: 1.0.215 - Publisher: Eugene Pankov
 Android Studio - Version: 2023.1 - Publisher: Google LLC
 Docker Desktop - Version: 4.25.1 - Publisher: Docker Inc.
 Git - Version: 2.48.1 - Publisher: The Git Development Community
@@ -139,7 +39,7 @@ Microsoft Build of OpenJDK with Hotspot 11.0.16.1+1 (x64) - Version: 11.0.16.101
 Wampserver64 3.3.5 - Version: 3.3.5 - Publisher: Dominique Ottello alias Otomatic
 Advanced BAT to EXE Converter v4.62 - Version:  - Publisher: 
 GNS3 - Version: 3.0.0b2 - Publisher: GNS3 Technology Inc.
-Google Chrome - Version: 134.0.6998.179 - Publisher: Google LLC
+Google Chrome - Version: 135.0.7049.42 - Publisher: Google LLC
 雷电模拟器 - Version: 9.0.66 - Publisher: ChangZhi Co.,Ltd.
 Nmap 7.94 - Version: 7.94 - Publisher: Nmap Project
 Npcap - Version: 1.79 - Publisher: Nmap Project
