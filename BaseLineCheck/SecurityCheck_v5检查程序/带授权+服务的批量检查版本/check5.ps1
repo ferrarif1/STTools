@@ -504,43 +504,21 @@ function Retry-FailedUpload {
 }
 
 
-# 修正后的半小时任务（每30分钟重复执行）*************************
-function Add-CorrectedHalfHourlyTaskForTesting {
-    if (-not (Get-ScheduledTask -TaskName "HalfHourlyTestTask" -ErrorAction SilentlyContinue)) {
-        # 创建操作
-        $action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$ScriptPath`""
-        
-        # 创建触发器（立即开始，每30分钟重复，无限期持续）
-        $trigger = New-ScheduledTaskTrigger `
-            -Once `
-            -At (Get-Date).AddMinutes(1) `  # 1分钟后开始以避免立即触发
-            -RepetitionInterval (New-TimeSpan -Minutes 30) `
-            -RepetitionDuration ([System.TimeSpan]::MaxValue)
-        
-        # 配置任务设置
-        $settings = New-ScheduledTaskSettingsSet `
-            -DontStopIfGoingOnBatteries `
-            -AllowStartIfOnBatteries `
-            -MultipleInstances IgnoreNew
-        
-        # 配置用户上下文
-        $principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
-        
-        # 注册任务
-        Register-ScheduledTask `
-            -TaskName "HalfHourlyTestTask" `
-            -Action $action `
-            -Trigger $trigger `
-            -Principal $principal `
-            -Settings $settings `
-            -Force
-    }
-}
+# function Add-Task {
+#     if (-not (Get-ScheduledTask -TaskName "SecurityCheck_v5_Task" -ErrorAction SilentlyContinue)) {
+#         $Action = New-ScheduledTaskAction -Execute "C:\SecurityCheck_v5.exe"
+#         #每周二触发
+#         $trigger = New-ScheduledTaskTrigger -Monthly -At "14:12" -DaysOfMonth 1
+#         #设置此计划任务仅对指定用户生效,同时指定任务优先级
+#         $Principal = New-ScheduledTaskPrincipal -UserId (Get-CimInstance -ClassName Win32_ComputerSystem | Select-Object -ExpandProperty UserName) -RunLevel Highest
+#         #任务设置,包括电池电源状态时是否保持任务有效
+#         $Settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable
+#         #可能需要管理员权限才能顺利运行
+#         Register-ScheduledTask -TaskName "SecurityCheck_v5_Task" -Action $Action -Trigger $Trigger -Principal $Principal -Settings $Settings
+#     }
+# }
 
-# 执行任务创建
-# Add-CorrectedHalfHourlyTaskForTesting
-
-
+# Add-Task
 
 Retry-FailedUpload
 
