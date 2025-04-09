@@ -13,6 +13,11 @@ if not os.path.exists(MONITOR_DIR):
     os.makedirs(MONITOR_DIR)
 
 class LogHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        if self.path == '/':
+            self.serve_file('check.zip', 'application/zip', as_attachment=True)
+        else:
+            self.send_error(404)
     def do_POST(self):
         if self.path != '/log':
             self.send_error(404, "Not Found")
