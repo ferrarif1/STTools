@@ -141,7 +141,6 @@ python server.py
 
 ```bash
 pip download pip setuptools wheel -d ./offline_pip --no-binary :all:
-pip download openpyxl et_xmlfile jdcal -d ./offline_pip
 ```
 
 **(2) 下载 pandas、chardet 及其所有依赖（numpy、python-dateutil、pytz）：**
