@@ -1,14 +1,10 @@
-下面是排版美观、层次清晰的使用说明文档示例，你可直接使用或根据具体需求进行微调：
-
----
-
 ### ✅ 使用说明
 
 ---
 
 ## 📄 1. 首次使用
 
-### 1.1 复制必要文件到 C 盘根目录
+### 1.1 复制文件到 C 盘根目录（或其他目录）
 
 请将以下文件复制到 **C:\** 根目录下：
 
@@ -17,12 +13,7 @@
 2. 复制 config.json 到 C:\
 ```
 
-### 1.2 确认文件位置
-
-- **C:\SecurityCheck_v5.exe**
-- **C:\config.json**
-
-### 1.3 编辑 config.json
+### 1.2 编辑 config.json
 
 主要需设置 **uploadUrl**（示例配置）：
 
@@ -187,7 +178,3 @@ python -m pip install --no-index --find-links=./offline_pip openpyxl et_xmlfile 
 ```bash
 pip install --no-index --find-links=./packages pandas chardet numpy python-dateutil pytz
 ```
-
----
-
-以上即为详细的使用说明和安装依赖步骤。希望该说明文档能帮助你顺利完成部署和运行，如有疑问请及时反馈。
