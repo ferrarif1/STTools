@@ -3,21 +3,22 @@ $AuthorizedKey = ConvertTo-SecureString "Hzdsz@2025#" -AsPlainText -Force
 $EncryptionKey = ConvertTo-SecureString "cxrHzfMfQuihZSE4XRP7rumqZY2mNaCU3BXKYL3TKE3DeNxFJ" -AsPlainText -Force
 $MaxTimestampMinutes = 10
 
-# 脚本路径检测
-try {
-    # 获取脚本所在目录
-    $ScriptDirectory = [System.IO.Path]::GetDirectoryName($MyInvocation.MyCommand.Path)
-    if ([string]::IsNullOrEmpty($ScriptDirectory)) {
-        $ScriptDirectory = [System.IO.Directory]::GetCurrentDirectory()
-    }
-} catch {
-    # 获取失败时使用当前目录
-    $ScriptDirectory = [System.IO.Directory]::GetCurrentDirectory()
-}
+# # 脚本路径检测
+# try {
+#     # 获取脚本所在目录
+#     $ScriptDirectory = [System.IO.Path]::GetDirectoryName($MyInvocation.MyCommand.Path)
+#     if ([string]::IsNullOrEmpty($ScriptDirectory)) {
+#         $ScriptDirectory = [System.IO.Directory]::GetCurrentDirectory()
+#     }
+# } catch {
+#     # 获取失败时使用当前目录
+#     $ScriptDirectory = [System.IO.Directory]::GetCurrentDirectory()
+# }
 
+# # 定义配置文件路径
+# $ipConfigPath = [System.IO.Path]::Combine($ScriptDirectory, "ip_set_config.json")
 # 定义配置文件路径
-$ipConfigPath = [System.IO.Path]::Combine($ScriptDirectory, "ip_set_config.json")
-
+$ipConfigPath = "ip_set_config.json"  # 使用相对路径
 
 # 将安全字符串转换为明文的函数 - 置于顶层
 function Convert-SecureStringToPlainText {
@@ -444,7 +445,7 @@ Pause-Script
 # Windows 10/11 客户端安全检查脚本
 
 # 读取配置文件
-$configPath = Join-Path $ScriptDirectory "config.json"
+$configPath = "config.json"
 try {
     $config = Get-Content $configPath -Raw | ConvertFrom-Json
     $ScriptPath = $config.scriptPath

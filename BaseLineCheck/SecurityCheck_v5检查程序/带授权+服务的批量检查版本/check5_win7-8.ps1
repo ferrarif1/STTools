@@ -1,23 +1,70 @@
-# 密钥和安全设置
+# === 密钥和安全设置 ===
+$ErrorActionPreference = "Stop"  # 确保在发生错误时停止执行
 $AuthorizedKey = ConvertTo-SecureString "Hzdsz@2025#" -AsPlainText -Force
 $EncryptionKey = ConvertTo-SecureString "cxrHzfMfQuihZSE4XRP7rumqZY2mNaCU3BXKYL3TKE3DeNxFJ" -AsPlainText -Force
 $MaxTimestampMinutes = 10
 
-# 脚本路径检测
-try {
-    # 获取脚本所在目录
-    $ScriptDirectory = [System.IO.Path]::GetDirectoryName($MyInvocation.MyCommand.Path)
-    if ([string]::IsNullOrEmpty($ScriptDirectory)) {
-        $ScriptDirectory = [System.IO.Directory]::GetCurrentDirectory()
+# 定义配置文件路径
+$ipConfigPath = "ip_set_config.json"  # 使用相对路径
+
+# === 获取当前 IP 地址的函数 ===
+function Get-CurrentIPAddress {
+    try {
+        # 获取启用的网络适配器
+        $networkAdapters = Get-WmiObject Win32_NetworkAdapterConfiguration | Where-Object { $_.IPEnabled -eq $true }
+        
+        if ($networkAdapters) {
+            foreach ($adapter in $networkAdapters) {
+                $ipAddresses = $adapter.IPAddress
+                if ($ipAddresses) {
+                    return $ipAddresses[0]  # 返回第一个 IP 地址
+                }
+            }
+        } else {
+            Write-Host "未找到启用的网络适配器。" -ForegroundColor Red
+            return $null
+        }
+    } catch {
+        Write-Host "获取 IP 地址时发生错误: $_" -ForegroundColor Red
+        return $null
     }
-} catch {
-    # 获取失败时使用当前目录
-    $ScriptDirectory = [System.IO.Directory]::GetCurrentDirectory()
 }
 
-# 定义配置文件路径
-$ipConfigPath = [System.IO.Path]::Combine($ScriptDirectory, "ip_set_config.json")
+# === 检查无线网卡状态的函数 ===
+function Check-WifiStatus {
+    try {
+        $wifiAdapters = Get-WmiObject Win32_NetworkAdapter | Where-Object { $_.Name -match "Wi[- ]?Fi" -or $_.Description -match "Wireless" }
+        if ($wifiAdapters) {
+            $activeWifi = $wifiAdapters | Where-Object { $_.NetConnectionStatus -eq 2 } # 2 表示连接状态
+            if ($activeWifi) {
+                $activeNames = $activeWifi | ForEach-Object { $_.Name } | Out-String
+                Write-Host "存在未禁用的无线网卡：$activeNames" -ForegroundColor Yellow
+                Write-Host "请进入【网络连接】界面，右键选择无线网卡并选择禁用。" -ForegroundColor Yellow
+            } else {
+                Write-Host "所有无线网卡均已禁用。" -ForegroundColor Green
+            }
+        } else {
+            Write-Host "未检测到无线网卡。" -ForegroundColor Red
+        }
+    } catch {
+        Write-Host "检查无线网卡状态时发生错误: $_" -ForegroundColor Red
+    }
+}
 
+# === 主程序逻辑 ===
+Write-Host "开始获取当前 IP 地址..." -ForegroundColor Green
+
+$currentIP = Get-CurrentIPAddress
+if ($currentIP) {
+    Write-Host "当前 IP 地址: $currentIP" -ForegroundColor Green
+} else {
+    Write-Host "无法获取当前 IP 地址。" -ForegroundColor Red
+}
+
+# 检查无线网卡状态
+Check-WifiStatus
+
+Write-Host "脚本执行完毕。" -ForegroundColor Green
 
 # 将安全字符串转换为明文的函数 - 置于顶层
 function Convert-SecureStringToPlainText {
@@ -63,7 +110,6 @@ function Write-LogEntry {
         # 日志记录失败时继续执行
     }
 }
-
 
 # 配置时间戳验证机制
 $MaxTimestampMinutes = 10
@@ -171,20 +217,45 @@ function Unprotect-ConfigContent {
 
 # 获取当前网段信息
 function Get-CurrentSubnet {
-    # 使用 netsh 代替 Get-NetAdapter 和 Get-NetIPConfiguration
-    $output = netsh interface ip show config
-    $ethernetAdapters = $output -match "以太网" -or $output -match "Ethernet"
+    # 首先尝试获取以太网适配器
+    $ethernetAdapters = Get-WmiObject Win32_NetworkAdapter | Where-Object { 
+        $_.Name -like "*以太网*" -or $_.Name -eq "以太网" -or $_.Name -eq "Ethernet" -and 
+        $_.NetConnectionStatus -eq 2 
+    }
     
     if ($ethernetAdapters) {
-        # 解析 netsh 输出以获取 IP 和子网掩码
-        $ipAddress = ($output -match "IP Address" | Select-String -Pattern "\d+\.\d+\.\d+\.\d+").Matches.Value
-        $subnetMask = ($output -match "Subnet Prefix" | Select-String -Pattern "\d+\.\d+\.\d+\.\d+").Matches.Value
+        # 优先使用以太网适配器
+        $adapter = $ethernetAdapters | Select-Object -First 1
+        $ipConfig = Get-WmiObject Win32_NetworkAdapterConfiguration | Where-Object { $_.Index -eq $adapter.Index }
+        
+        if ($ipConfig -and $ipConfig.IPAddress) {
+            $ipv4Address = $ipConfig.IPAddress[0]
+            $subnetMask = $ipConfig.IPSubnet[0]
+            
+            # 计算出网段 (CIDR表示法)
+            $ipParts = $ipv4Address -split "\."
+            $subnetCIDR = "$($ipParts[0]).$($ipParts[1]).$($ipParts[2]).0/$subnetMask"
+            
+            Write-Host "使用以太网适配器: $($adapter.Name), IP: $ipv4Address" -ForegroundColor Cyan
+            return $subnetCIDR
+        }
+    }
+    
+    # 如果没找到以太网或者以太网没有IPv4地址，找一个有默认网关的适配器
+    $connectedAdapter = Get-WmiObject Win32_NetworkAdapterConfiguration | Where-Object { 
+        $_.IPAddress -ne $null -and 
+        $_.DefaultIPGateway -ne $null 
+    } | Select-Object -First 1
+    
+    if ($connectedAdapter) {
+        $ipAddress = $connectedAdapter.IPAddress[0]
+        $subnetMask = $connectedAdapter.IPSubnet[0]
         
         # 计算出网段 (CIDR表示法)
         $ipParts = $ipAddress -split "\."
         $subnetCIDR = "$($ipParts[0]).$($ipParts[1]).$($ipParts[2]).0/$subnetMask"
         
-        Write-Host "使用以太网适配器, IP: $ipAddress" -ForegroundColor Cyan
+        Write-Host "使用适配器: $($connectedAdapter.Description), IP: $ipAddress" -ForegroundColor Yellow
         return $subnetCIDR
     }
     
@@ -414,10 +485,12 @@ try {
 # 在脚本最后添加此行以保持窗口打开
 Pause-Script
 
+
 # Windows 10/11 客户端安全检查脚本
 
 # 读取配置文件
-$configPath = Join-Path $ScriptDirectory "config.json"
+$configPath = "config.json"
+
 try {
     $config = Get-Content $configPath -Raw | ConvertFrom-Json
     $ScriptPath = $config.scriptPath
@@ -476,7 +549,6 @@ function Retry-FailedUpload {
     }
 }
 
-
 # function Add-Task {
 #     if (-not (Get-ScheduledTask -TaskName "SecurityCheck_v5_Task" -ErrorAction SilentlyContinue)) {
 #         $Action = New-ScheduledTaskAction -Execute "C:\SecurityCheck_v5.exe"
@@ -499,11 +571,10 @@ Retry-FailedUpload
 $Results = @()
 
 # ========== 检查逻辑 ==========
-# 在脚本最开头添加编码设置
-$OutputEncoding = [System.Text.Encoding]::UTF8
-[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+# 设置 PowerShell 控制台输出编码为 UTF8（兼容 Win7/8）
+$OutputEncoding = New-Object -typename System.Text.UTF8Encoding
+[Console]::OutputEncoding = New-Object -typename System.Text.UTF8Encoding
 
-# 定义辅助函数，用于输出成功、错误及修复建议信息
 function Write-Success($msg) {
     Write-Host "✔ $msg" -ForegroundColor Green
 }
@@ -517,57 +588,72 @@ function Write-Seperator {
     Write-Host "--------"
 }
 
+
 try {
     Write-Host "========== 安全检查报告 =========="
 
     # 1. 检查是否开启或使用FTP传输功能
     Write-Host "`n【1】FTP服务与传输功能检查："
     try {
-        # 检查FTP服务是否安装
-        $ftpService = sc query ftpsvc | Select-String "STATE"
-        if ($ftpService -match "RUNNING") {
-            Write-ErrorMsg "检测到FTP服务 (FTPSVC) 已安装且正在运行。"
-            Write-Instruction "出于安全考虑，建议禁用FTP服务。"
+        $ftpService = Get-Service -Name FTPSVC -ErrorAction SilentlyContinue
+    
+        $ftpClientInstalled = Get-Command "ftp.exe" -ErrorAction SilentlyContinue
+        if ($ftpClientInstalled) {
+            Write-ErrorMsg "FTP客户端功能已启用。"
+            Write-Instruction "建议在'控制面板'>'启用或关闭Windows功能'中禁用 FTP 客户端。"
             $Results += @{
                 Item       = "FTP服务"
-                Issue      = "FTP 服务已安装且正在运行"
-                Suggestion = "请禁用 FTP 服务"
+                Issue      = "FTP 服务已安装，状态为 $($ftpService.Status)"
+                Suggestion = "建议在'控制面板'>'启用或关闭Windows功能'中禁用 FTP 客户端。"
             }
         } else {
-            Write-Success "未检测到FTP服务 (FTPSVC) 安装，符合安全要求。"
+            Write-Success "FTP 客户端未启用。"
+        }
+    
+        $netstat = netstat -an | Select-String ":21\s+"
+        if ($netstat) {
+            Write-ErrorMsg "检测到 FTP 端口 (21) 被监听。"
+            Write-Instruction "请停止使用 FTP 的相关服务或软件。"
             $Results += @{
                 Item       = "FTP服务"
-                Issue      = "未检测到FTP服务"
-                Suggestion = "无"
+                Issue      = "检测到 FTP 端口 (21) 被监听"
+                Suggestion = "请停止使用 FTP 的相关服务或软件。"
             }
+        } else {
+            Write-Success "端口 21 未被监听。"
+        }
+    
+        if ($ftpService) {
+            Write-ErrorMsg "检测到 FTP 服务已安装，状态: $($ftpService.Status)"
+            Write-Instruction "建议禁用 FTP 服务（在服务管理器中设置为禁用）。"
+            $Results += @{
+                Item       = "FTP服务"
+                Issue      = "检测到 FTP 服务已安装"
+                Suggestion = "建议禁用 FTP 服务（在服务管理器中设置为禁用）"
+            }
+        } else {
+            Write-Success "系统未安装 FTP 服务。"
         }
     } catch {
-        Write-ErrorMsg "检查FTP功能时发生错误: $_"
-        Write-Instruction "请手动检查FTP服务和端口21的状态。"
+        Write-ErrorMsg "检测 FTP 状态时出错：$_"
         $Results += @{
-            Item       = "FTP检查"
+            Item       = "FTP服务"
             Issue      = "检查过程中发生错误: $_"
             Suggestion = "请手动检查FTP服务和端口21的状态"
         }
     }
+  
     Write-Seperator
 
     # 2. 网卡信息及无线网卡状态检查
     Write-Host "`n【2】网卡信息："
     try {
-        $interfaces = Get-NetAdapter | Select-Object Name, Status, InterfaceDescription
+        $interfaces = Get-WmiObject -Class Win32_NetworkAdapter | Where-Object { $_.NetEnabled -eq $true }
         if ($interfaces) {
-            Write-Host "检测到的网卡信息："
-            $interfaces | Format-Table -AutoSize
-            
-            # 记录基本网卡摘要信息
-            $Results += @{
-                Item       = "网卡信息"
-                Issue      = "检测到 $($interfaces.Count) 个网卡"
-                Suggestion = "确认网卡状态是否符合预期"
-            }
-            
-            # 添加每个网卡的详细信息
+            Write-Host "检测到以下启用的网卡："
+            $interfaces | Select-Object Name, NetConnectionStatus, Description | Format-Table -AutoSize
+           
+             # 添加每个网卡的详细信息
             foreach ($nic in $interfaces) {
                 $Results += @{
                     Item       = "网卡详情"
@@ -575,37 +661,24 @@ try {
                     Suggestion = "无"
                 }
             }
-            
-            # 收集更多网卡参数信息
-            $nicDetails = Get-NetAdapter | Get-NetIPConfiguration | Select-Object InterfaceAlias, IPv4Address, IPv6Address, DNSServer
-            if ($nicDetails) {
-                $Results += @{
-                    Item       = "网卡IP配置"
-                    Issue      = "已获取网卡IP配置信息"
-                    Suggestion = "无"
-                }
-                
-                foreach ($nicDetail in $nicDetails) {
-                    $ipv4 = if ($nicDetail.IPv4Address) { $nicDetail.IPv4Address.IPAddress } else { "未配置" }
-                    $dns = if ($nicDetail.DNSServer.ServerAddresses) { $nicDetail.DNSServer.ServerAddresses -join "," } else { "未配置" }
-                    
-                    $Results += @{
-                        Item       = "网卡配置详情"
-                        Issue      = "网卡: $($nicDetail.InterfaceAlias), IPv4: $ipv4, DNS: $dns"
-                        Suggestion = "无"
-                    }
-                }
-            }
         } else {
-            Write-ErrorMsg "未检测到任何网卡。"
+            Write-ErrorMsg "未检测到启用的网卡。"
+        }
+    
+        $wifi = $interfaces | Where-Object { $_.Description -match "Wireless|Wi-Fi" }
+        if ($wifi) {
+            Write-ErrorMsg "检测到启用的无线网卡。"
+            Write-Instruction "建议禁用无线网卡以加强安全性。"
             $Results += @{
                 Item       = "网卡信息"
-                Issue      = "未检测到任何网卡"
-                Suggestion = "请检查网络硬件"
+                Issue      = "检测到启用的无线网卡"
+                Suggestion = ""
             }
+        } else {
+            Write-Success "无线网卡已禁用或不存在。"
         }
     } catch {
-        Write-ErrorMsg "获取网卡信息失败: $_"
+        Write-ErrorMsg "获取网卡信息失败：$_"
         $Results += @{
             Item       = "网卡信息"
             Issue      = "获取网卡信息失败: $_"
@@ -613,85 +686,58 @@ try {
         }
     }
 
-    # 检查无线网卡状态
-    $wifiAdapters = Get-NetAdapter | Where-Object { $_.Name -match "Wi[- ]?Fi" -or $_.InterfaceDescription -match "Wireless" }
-    if ($wifiAdapters) {
-        $activeWifi = $wifiAdapters | Where-Object { $_.Status -ne "Disabled" }
-        if ($activeWifi) {
-            $activeNames = $activeWifi | ForEach-Object { $_.Name } | Out-String
-            Write-ErrorMsg "存在未禁用的无线网卡：$activeNames"
-            Write-Instruction "请进入【网络连接】界面，右键选择无线网卡并选择禁用。"
-            $Results += @{
-                Item       = "无线网卡"
-                Issue      = "存在未禁用的无线网卡: $activeNames"
-                Suggestion = "请禁用未使用的无线网卡"
-            }
-        } else {
-            Write-Success "所有无线网卡均已禁用。"
-            $Results += @{
-                Item       = "无线网卡"
-                Issue      = "所有无线网卡均已禁用"
-                Suggestion = "无"
-            }
-        }
-    } else {
-        Write-Host "未检测到无线网卡。"
-        $Results += @{
-            Item       = "无线网卡"
-            Issue      = "未检测到无线网卡"
-            Suggestion = "无"
-        }
-    }
     Write-Seperator
 
     # 3. 高危端口状态检测（防火墙规则检查）
     Write-Host "`n【3】高危端口状态检测（防火墙规则检查）："
-    $ports = @(22,23,135,137,138,139,445,455,3389,4899)
+    $ports = @(22, 23, 135, 137, 138, 139, 445, 455, 3389, 4899)
     foreach ($port in $ports) {
-        try {
-            $fwRule = netsh advfirewall firewall show rule name=all | Select-String -Pattern "LocalPort=$port"
-            if ($fwRule) {
-                Write-Success "端口 $port 已被防火墙策略封禁。"
-                $Results += @{
-                    Item       = "端口 $port"
-                    Issue      = "端口 $port 被封禁"
-                    Suggestion = "无"
-                }
-            } else {
-                Write-ErrorMsg "端口 $port 未被防火墙策略封禁。"
-                Write-Instruction "请使用 netsh 添加入站规则封禁该端口。"
-                $Results += @{
-                    Item       = "端口 $port"
-                    Issue      = "端口 $port 未封禁"
-                    Suggestion = "请封禁该端口"
+        $rules = netsh advfirewall firewall show rule name=all | Out-String
+        $isBlocked = $false
+        if ($rules -match "LocalPort:\s*$port\b" -or 
+            $rules -match "RemotePort:\s*$port\b" -or 
+            $rules -match "Port:\s*$port\b" -or
+            $rules -match "本地端口:\s*$port\b" -or
+            $rules -match "远程端口:\s*$port\b" -or
+            $rules -match "端口:\s*$port\b") {
+            $isBlocked = $true
+        } else {
+            $rules -split "`n" | ForEach-Object {
+                if ($_ -match "(LocalPort|RemotePort|Port|本地端口|远程端口|端口):\s*(\d+)-(\d+)") {
+                    $start = [int]$matches[2]
+                    $end = [int]$matches[3]
+                    if ($port -ge $start -and $port -le $end) {
+                        $isBlocked = $true
+                    }
                 }
             }
-        } catch {
-            Write-ErrorMsg "检测端口 $port 时发生异常: $_"
+        }
+        if ($isBlocked) {
+            Write-Success "端口 $port 存在防火墙规则。"
+        } else {
+            Write-ErrorMsg "端口 $port 未设置防火墙封禁。"
+            Write-Instruction "建议手动设置防火墙封禁该端口。"
             $Results += @{
-                Item       = "端口 $port"
-                Issue      = "检测异常: $_"
-                Suggestion = "检查防火墙配置"
+                Item       = "高危端口状态检测"
+                Issue      = "端口 $port 未设置防火墙封禁。"
+                Suggestion = "建议手动设置防火墙封禁该端口。"
             }
         }
     }
+ 
     Write-Seperator
+
 
     # 4. 检查 IPv6 是否被禁用
     Write-Host "`n【4】IPv6 禁用状态："
-    $regPath = "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip6\Parameters"
     try {
+        $regPath = "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip6\Parameters"
         $ipv6Value = (Get-ItemProperty -Path $regPath -Name "DisabledComponents" -ErrorAction SilentlyContinue).DisabledComponents
         if ($ipv6Value -eq 255) {
-            Write-Success "IPv6 已通过注册表方式禁用 (DisabledComponents = $ipv6Value)。"
-            $Results += @{
-                Item       = "IPv6"
-                Issue      = "IPv6 已禁用 (DisabledComponents = $ipv6Value)"
-                Suggestion = "无"
-            }
+            Write-Success "IPv6 已禁用。"
         } else {
-            Write-ErrorMsg "IPv6 可能未完全禁用 (DisabledComponents = $ipv6Value)。"
-            Write-Instruction "建议使用注册表方式禁用 IPv6：打开【注册表编辑器】，定位到 HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip6\Parameters，创建或修改 DisabledComponents 的值为 255。"
+            Write-ErrorMsg "IPv6 未完全禁用。"
+            Write-Instruction "建议设置注册表 DisabledComponents=255 完全禁用 IPv6。"
             $Results += @{
                 Item       = "IPv6"
                 Issue      = "IPv6 未完全禁用 (DisabledComponents = $ipv6Value)"
@@ -699,44 +745,30 @@ try {
             }
         }
     } catch {
-        Write-ErrorMsg "未检测到 IPv6 禁用相关的注册表设置。"
-        Write-Instruction "请打开【注册表编辑器】，定位到 HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip6\Parameters，创建 DisabledComponents 并设置值为 255。"
-        $Results += @{
-            Item       = "IPv6"
-            Issue      = "未检测到相关注册表设置"
-            Suggestion = "请手动设置 DisabledComponents = 255"
-        }
+        Write-ErrorMsg "未检测到 IPv6 注册表设置。"
     }
     Write-Seperator
 
     # 5. 高危漏洞修复检查（更新情况）
     Write-Host "`n【5】高危漏洞修复检查（更新情况）："
     try {
-        $hotfixes = Get-HotFix | Sort-Object InstalledOn -Descending
-        if ($hotfixes) {
-            $latest = $hotfixes | Select-Object -First 1
-            Write-Success "最新已安装的更新：$($latest.HotFixID)，安装日期：$($latest.InstalledOn)。"
-            Write-Host "请核查更新是否包含近期针对高危漏洞的补丁。"
+        $hotfix = Get-HotFix | Sort-Object InstalledOn -Descending | Select-Object -First 1
+        if ($hotfix) {
+            Write-Success "最近安装的更新：$($hotfix.HotFixID)，时间：$($hotfix.InstalledOn)"
             $Results += @{
-                Item       = "更新补丁"
-                Issue      = "最新更新：$($latest.HotFixID)，日期：$($latest.InstalledOn)"
-                Suggestion = "请核查补丁内容"
+                Item       = "高危漏洞修复检查"
+                Issue      = "最近安装的更新：$($hotfix.HotFixID)，时间：$($hotfix.InstalledOn)"
+                Suggestion = ""
             }
         } else {
-            Write-ErrorMsg "无法获取已安装更新信息。"
-            Write-Instruction "请进入【设置】>【更新与安全】检查 Windows 更新，并安装所有重要更新。"
-            $Results += @{
-                Item       = "更新补丁"
-                Issue      = "无法获取更新信息"
-                Suggestion = "请检查 Windows 更新"
-            }
+            Write-ErrorMsg "未获取到更新信息。"
         }
     } catch {
-        Write-ErrorMsg "获取更新信息失败: $_"
+        Write-ErrorMsg "检查更新失败：$_"
         $Results += @{
-            Item       = "更新补丁"
-            Issue      = "获取更新信息失败: $_"
-            Suggestion = "请手动检查更新"
+            Item       = "高危漏洞修复检查"
+            Issue      = "检查更新失败"
+            Suggestion = ""
         }
     }
     Write-Seperator
@@ -766,21 +798,16 @@ try {
     # 7. 检查 Guest 用户状态
     Write-Host "`n【7】Guest 用户状态："
     try {
-        $guest = Get-LocalUser -Name Guest -ErrorAction SilentlyContinue
+        $guest = Get-WmiObject -Class Win32_UserAccount | Where-Object { $_.Name -eq "Guest" }
         if ($guest) {
-            if ($guest.Enabled -eq $false) {
+            if ($guest.Disabled) {
                 Write-Success "Guest 用户已禁用。"
-                $Results += @{
-                    Item       = "Guest 用户"
-                    Issue      = "已禁用"
-                    Suggestion = "无"
-                }
             } else {
                 Write-ErrorMsg "Guest 用户仍处于启用状态。"
                 Write-Instruction "请打开【计算机管理】>【本地用户和组】禁用 Guest 用户。"
                 $Results += @{
                     Item       = "Guest 用户"
-                    Issue      = "仍启用"
+                    Issue      = "Guest 用户启用"
                     Suggestion = "请禁用 Guest 用户"
                 }
             }
@@ -789,7 +816,7 @@ try {
             $Results += @{
                 Item       = "Guest 用户"
                 Issue      = "未检测到"
-                Suggestion = "无"
+                Suggestion = ""
             }
         }
     } catch {
@@ -804,19 +831,13 @@ try {
 
     # 8. 检查 U盘自动播放功能设置
     Write-Host "`n【8】U盘自动播放功能设置："
-    $regPathUSB = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\policies\Explorer"
     try {
+        $regPathUSB = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\policies\Explorer"
         $noDriveValue = (Get-ItemProperty -Path $regPathUSB -Name "NoDriveTypeAutoRun" -ErrorAction SilentlyContinue).NoDriveTypeAutoRun
         if ($noDriveValue -eq 255) {
-            Write-Success "U盘自动播放已禁用 (NoDriveTypeAutoRun = $noDriveValue)。"
-            $Results += @{
-                Item       = "U盘自动播放"
-                Issue      = "已禁用 (NoDriveTypeAutoRun = $noDriveValue)"
-                Suggestion = "无"
-            }
+            Write-Success "U盘自动播放已禁用。"
         } else {
-            Write-ErrorMsg "U盘自动播放可能未完全禁用 (NoDriveTypeAutoRun = $noDriveValue)。"
-            Write-Instruction "请打开【注册表编辑器】，定位到 HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\policies\Explorer，将 NoDriveTypeAutoRun 的值修改为 255。"
+            Write-ErrorMsg "U盘自动播放未禁用 (当前值: $noDriveValue)。"
             $Results += @{
                 Item       = "U盘自动播放"
                 Issue      = "未完全禁用 (NoDriveTypeAutoRun = $noDriveValue)"
@@ -824,13 +845,14 @@ try {
             }
         }
     } catch {
-        Write-ErrorMsg "获取 U盘自动播放设置失败: $_"
+        Write-ErrorMsg "读取 U盘 自动播放设置失败。"
         $Results += @{
             Item       = "U盘自动播放"
             Issue      = "获取设置失败: $_"
             Suggestion = "请手动检查注册表"
         }
     }
+
     Write-Seperator
 
     # 9. 检查 Google 浏览器版本
