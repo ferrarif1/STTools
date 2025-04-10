@@ -171,20 +171,47 @@ function Unprotect-ConfigContent {
 
 # 获取当前网段信息
 function Get-CurrentSubnet {
-    # 使用 netsh 代替 Get-NetAdapter 和 Get-NetIPConfiguration
-    $output = netsh interface ip show config
-    $ethernetAdapters = $output -match "以太网" -or $output -match "Ethernet"
+    # 首先尝试获取以太网适配器
+    $ethernetAdapters = Get-NetAdapter | Where-Object { 
+        $_.Name -like "*以太网*" -or $_.Name -eq "以太网" -or $_.Name -eq "Ethernet" -and 
+        $_.Status -eq "Up" 
+    }
     
     if ($ethernetAdapters) {
-        # 解析 netsh 输出以获取 IP 和子网掩码
-        $ipAddress = ($output -match "IP Address" | Select-String -Pattern "\d+\.\d+\.\d+\.\d+").Matches.Value
-        $subnetMask = ($output -match "Subnet Prefix" | Select-String -Pattern "\d+\.\d+\.\d+\.\d+").Matches.Value
+        # 优先使用以太网适配器
+        $adapter = $ethernetAdapters | Select-Object -First 1
+        $ipConfig = Get-NetIPConfiguration -InterfaceIndex $adapter.ifIndex
+        
+        if ($ipConfig -and $ipConfig.IPv4Address) {
+            $ipv4Address = $ipConfig.IPv4Address.IPAddress
+            $subnetMask = $ipConfig.IPv4Address.PrefixLength
+            
+            # 计算出网段 (CIDR表示法)
+            $ipParts = $ipv4Address -split "\."
+            $subnetCIDR = "$($ipParts[0]).$($ipParts[1]).$($ipParts[2]).0/$subnetMask"
+            
+            Write-Host "使用以太网适配器: $($adapter.Name), IP: $ipv4Address" -ForegroundColor Cyan
+            return $subnetCIDR
+        }
+    }
+    
+    # 如果没找到以太网或者以太网没有IPv4地址，找一个有默认网关的适配器
+    $connectedAdapter = Get-NetIPConfiguration | 
+                         Where-Object { 
+                            $_.IPv4Address -ne $null -and 
+                            $_.IPv4DefaultGateway -ne $null 
+                         } | 
+                         Select-Object -First 1
+    
+    if ($connectedAdapter) {
+        $ipAddress = $connectedAdapter.IPv4Address.IPAddress
+        $subnetMask = $connectedAdapter.IPv4Address.PrefixLength
         
         # 计算出网段 (CIDR表示法)
         $ipParts = $ipAddress -split "\."
         $subnetCIDR = "$($ipParts[0]).$($ipParts[1]).$($ipParts[2]).0/$subnetMask"
         
-        Write-Host "使用以太网适配器, IP: $ipAddress" -ForegroundColor Cyan
+        Write-Host "使用适配器: $($connectedAdapter.InterfaceAlias), IP: $ipAddress" -ForegroundColor Yellow
         return $subnetCIDR
     }
     
@@ -524,14 +551,41 @@ try {
     Write-Host "`n【1】FTP服务与传输功能检查："
     try {
         # 检查FTP服务是否安装
-        $ftpService = sc query ftpsvc | Select-String "STATE"
-        if ($ftpService -match "RUNNING") {
-            Write-ErrorMsg "检测到FTP服务 (FTPSVC) 已安装且正在运行。"
-            Write-Instruction "出于安全考虑，建议禁用FTP服务。"
+        $ftpService = Get-Service -Name FTPSVC -ErrorAction SilentlyContinue
+        
+        # 简化FTP客户端功能检查（不需要管理员权限）
+        $ftpClientInstalled = $false
+        try {
+            $ftpCommand = Get-Command "ftp.exe" -ErrorAction SilentlyContinue
+            $ftpClientInstalled = ($ftpCommand -ne $null)
+        } catch {
+            $ftpClientInstalled = $false
+        }
+
+        # 检查FTP端口是否开放
+        $ftpPort = $null
+        try {
+            $netstat = netstat -ano | Select-String -Pattern ":21\s+"
+            $ftpPort = $netstat.Count -gt 0
+        } catch {
+            $ftpPort = $false
+        }
+        
+        # 检查FTP防火墙规则（可能需要管理员权限）
+        $ftpInboundRules = $null
+        try {
+            $ftpInboundRules = Get-NetFirewallRule -DisplayName "*FTP*" -Direction Inbound -Enabled True -ErrorAction SilentlyContinue
+        } catch {
+            Write-Host "无法获取防火墙规则，可能需要管理员权限。" -ForegroundColor Yellow
+        }
+        
+        if ($ftpService) {
+            Write-ErrorMsg "检测到FTP服务 (FTPSVC) 已安装且状态为: $($ftpService.Status)"
+            Write-Instruction "出于安全考虑，建议禁用FTP服务。请在【服务】管理器中将FTP服务设置为禁用。"
             $Results += @{
                 Item       = "FTP服务"
-                Issue      = "FTP 服务已安装且正在运行"
-                Suggestion = "请禁用 FTP 服务"
+                Issue      = "FTP 服务已安装，状态为 $($ftpService.Status)"
+                Suggestion = "请在【服务】中禁用 FTP 服务"
             }
         } else {
             Write-Success "未检测到FTP服务 (FTPSVC) 安装，符合安全要求。"
@@ -540,6 +594,64 @@ try {
                 Issue      = "未检测到FTP服务"
                 Suggestion = "无"
             }
+        }
+        
+        if ($ftpPort) {
+            Write-ErrorMsg "检测到TCP端口21（FTP默认端口）当前处于监听状态。"
+            Write-Instruction "请检查是否有应用正在使用FTP端口，并停止相关服务。"
+            $Results += @{
+                Item       = "FTP端口"
+                Issue      = "TCP 21 端口正在监听"
+                Suggestion = "请停止相关FTP服务或释放端口"
+            }
+        } else {
+            Write-Success "未检测到TCP端口21（FTP）正在使用。"
+            $Results += @{
+                Item       = "FTP端口"
+                Issue      = "TCP 21 端口未监听"
+                Suggestion = "无"
+            }
+        }
+        
+        if ($ftpInboundRules) {
+            Write-ErrorMsg "检测到允许FTP流量的防火墙入站规则："
+            foreach ($rule in $ftpInboundRules) {
+                Write-Host "  - $($rule.DisplayName) (已启用)" -ForegroundColor Red
+            }
+            Write-Instruction "请进入【Windows Defender 防火墙】>【高级设置】禁用这些规则，或将其操作设置为阻止。"
+            $Results += @{
+                Item       = "FTP防火墙规则"
+                Issue      = "存在启用的FTP入站防火墙规则"
+                Suggestion = "请关闭这些规则或设置为阻止"
+            }
+        } else {
+            Write-Success "未检测到允许FTP流量的防火墙入站规则。"
+            $Results += @{
+                Item       = "FTP防火墙规则"
+                Issue      = "无FTP防火墙入站规则"
+                Suggestion = "无"
+            }
+        }
+        
+        if ($ftpClientInstalled) {
+            Write-ErrorMsg "FTP客户端功能已启用。"
+            Write-Instruction "建议禁用FTP客户端功能。请在【控制面板】>【程序和功能】>【启用或关闭Windows功能】中取消勾选FTP客户端。"
+            $Results += @{
+                Item       = "FTP客户端"
+                Issue      = "FTP客户端功能已启用"
+                Suggestion = "请在系统功能中取消 FTP 客户端 勾选"
+            }
+        } else {
+            Write-Success "FTP客户端功能未启用，符合安全要求。"
+            $Results += @{
+                Item       = "FTP客户端"
+                Issue      = "FTP客户端未启用"
+                Suggestion = "无"
+            }
+        }
+        
+        if (-not $ftpService -and -not $ftpPort -and -not $ftpInboundRules -and -not $ftpClientInstalled) {
+            Write-Success "系统未启用FTP相关功能，符合安全基线要求。"
         }
     } catch {
         Write-ErrorMsg "检查FTP功能时发生错误: $_"
@@ -649,9 +761,14 @@ try {
     $ports = @(22,23,135,137,138,139,445,455,3389,4899)
     foreach ($port in $ports) {
         try {
-            $fwRule = netsh advfirewall firewall show rule name=all | Select-String -Pattern "LocalPort=$port"
-            if ($fwRule) {
-                Write-Success "端口 $port 已被防火墙策略封禁。"
+            $fwInbound = Get-NetFirewallRule -Direction Inbound -Action Block -Enabled True -ErrorAction SilentlyContinue | 
+                        Get-NetFirewallPortFilter -ErrorAction SilentlyContinue | 
+                        Where-Object { $_.LocalPort -eq "$port" }
+            $fwOutbound = Get-NetFirewallRule -Direction Outbound -Action Block -Enabled True -ErrorAction SilentlyContinue | 
+                        Get-NetFirewallPortFilter -ErrorAction SilentlyContinue | 
+                        Where-Object { $_.LocalPort -eq "$port" }
+            if ($fwInbound -or $fwOutbound) {
+                Write-Success "端口 $port 已被防火墙策略封禁（入站或出站）。"
                 $Results += @{
                     Item       = "端口 $port"
                     Issue      = "端口 $port 被封禁"
@@ -659,7 +776,7 @@ try {
                 }
             } else {
                 Write-ErrorMsg "端口 $port 未被防火墙策略封禁。"
-                Write-Instruction "请使用 netsh 添加入站规则封禁该端口。"
+                Write-Instruction "请进入【控制面板】>【Windows Defender 防火墙】>【高级设置】，添加入站规则封禁该端口。"
                 $Results += @{
                     Item       = "端口 $port"
                     Issue      = "端口 $port 未封禁"

@@ -13,6 +13,11 @@ if not os.path.exists(MONITOR_DIR):
     os.makedirs(MONITOR_DIR)
 
 class LogHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        if self.path == '/':
+            self.serve_file('check.zip', 'application/zip', as_attachment=True)
+        else:
+            self.send_error(404)
     def do_POST(self):
         if self.path != '/log':
             self.send_error(404, "Not Found")
@@ -84,6 +89,19 @@ class LogHandler(BaseHTTPRequestHandler):
             df_all = df_new
 
         df_all.to_excel(EXCEL_PATH, index=False)
+
+    def serve_file(self, filename, content_type, as_attachment=False):
+        """Serve a file to the client."""
+        if os.path.exists(filename):
+            self.send_response(200)
+            self.send_header('Content-Type', content_type)
+            if as_attachment:
+                self.send_header('Content-Disposition', f'attachment; filename="{filename}"')
+            self.end_headers()
+            with open(filename, 'rb') as f:
+                self.wfile.write(f.read())
+        else:
+            self.send_error(404, "File not found")
 
 if __name__ == '__main__':
     server = HTTPServer(('0.0.0.0', 8000), LogHandler)
