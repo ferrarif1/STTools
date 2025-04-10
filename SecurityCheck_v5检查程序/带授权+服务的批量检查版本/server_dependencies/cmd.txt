@@ -1,0 +1,16 @@
+1.如果安装时报错缺少其他依赖，需在联网环境重新下载完整依赖树
+pip download pip setuptools wheel -d ./offline_pip --no-binary :all:
+pip download openpyxl -d ./offline_pip
+
+2.离线安装 pip
+在离线机器上执行以下命令：
+(1) 安装 setuptools 和 wheel
+python -m pip install --no-index --find-links=./offline_pip setuptools wheel
+​(2) 安装 pip
+python -m pip install --no-index --find-links=./offline_pip pip 
+
+3.联网环境下载库及其依赖
+pip download pandas chardet -d ./packages
+
+4.离线安装依赖
+pip install --no-index --find-links=./packages pandas chardet

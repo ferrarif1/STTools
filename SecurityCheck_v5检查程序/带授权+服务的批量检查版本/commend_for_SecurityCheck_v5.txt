@@ -1,0 +1,13 @@
+编码修复：
+$content = Get-Content -Path ".\check5.ps1" -Raw
+$utf8NoBomEncoding = New-Object System.Text.UTF8Encoding $true
+[System.IO.File]::WriteAllText(".\check5.ps1", $content, $utf8NoBomEncoding)
+
+运行：
+powershell -ExecutionPolicy ByPass -File ".\check5.ps1" -Encoding UTF8
+
+
+打包：
+cd C:\Users\revan\Desktop\STTools\BaseLineCheck\SecurityCheck_v5检查程序\带授权+服务的批量检查版本
+powershell -ExecutionPolicy ByPass -File ".\build.ps1"
+ 
