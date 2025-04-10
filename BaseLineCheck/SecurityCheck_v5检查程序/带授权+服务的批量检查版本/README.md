@@ -43,7 +43,7 @@
   ```
 
 - **后续运行：** 自动检测当前网段是否被授权，已授权则继续执行，否则要求重新输入密钥进行授权。
-- **安全检查：** 执行全面的安全基线检查，包括 FTP、网卡、端口、IPv6 等多个方面。
+
 
 ---
 
@@ -55,46 +55,18 @@
 ---
 
 ### 🔍 **4. 检查项目说明**
-1. **FTP服务与传输功能检查**
-   - FTP服务状态
-   - FTP客户端功能
-   - FTP端口（21）监听状态
-   - FTP防火墙规则
-
-2. **网卡信息检查**
-   - 网卡状态与配置
-   - IP配置信息
-   - 无线网卡状态
-
-3. **高危端口状态检测**
+1. **FTP服务与传输功能检查**  
+2. **网卡信息检查**  
+3. **高危端口状态检测**  
    - 检查端口：22,23,135,137,138,139,445,455,3389,4899
-   - 防火墙规则检查
-
-4. **IPv6 禁用状态检查**
-   - 注册表配置检查
-
-5. **高危漏洞修复检查**
-   - Windows 更新情况
-   - 补丁安装状态
-
-6. **密码策略检查**
-   - 密码有效期
-   - 密码复杂度要求
-
-7. **Guest 用户状态检查**
-   - 账户启用状态
-
-8. **U盘自动播放功能检查**
-   - 注册表配置检查
-
-9. **Google 浏览器版本检测**
-   - Chrome 版本检查
-   - 更新建议
-
-10. **锁屏策略检查**
-    - 超时时间设置
-    - 密码保护状态
-
+4. **IPv6 禁用状态检查**  
+5. **高危漏洞修复检查**  
+   - Windows 更新情况  
+6. **密码策略检查**  
+7. **Guest 用户状态检查**  
+8. **U盘自动播放功能检查**  
+9. **Google 浏览器版本检测**  
+10. **锁屏策略检查**  
 ---
 
 ### 📄 **5. 检查结果说明**
@@ -109,34 +81,75 @@
 2. 上传到配置的服务器（通过 `config.json` 中的 `uploadUrl`）
 3. 如果上传失败，保存到本地缓存文件（`check_fail.json`）
 
+最终汇总至summary.xlsx
 ---
 
-### 🕒 **6. 定时任务功能**
 
-为了定期自动执行安全检查，程序会创建一个定时任务。以下是相关说明：
+### 🛠 **7. 安装依赖**
 
-- **任务名称:** `SecurityCheck_v5_Task`
-- **触发器:** 每月 1 日和 15 日的 9:00 AM，带有 2 小时的随机延迟，以避免任务堆积。
-- **操作:** 运行 `C:\SecurityCheck_v5.exe`
-- **用户:** 系统账户 (`NT AUTHORITY\SYSTEM`)
+1. **客户端安装依赖**
+   - win7、win8若缺少.net framework，离线安装.net framework：dotNetFx35  
+   - win7 - 离线安装Win7AndW2K8R2-KB3191566-x64.msu   
+   - win8 - 离线安装Win8.1AndW2K12R2-KB3191564-x64.msu  
 
+1. **服务端安装依赖**
+- **需要python环境及以下依赖：**  
+- **openpyxl** 还需要依赖【et_xmlfile】和【jdcal】；  
+- **pandas** 除了自身外，还依赖【numpy】、【python-dateutil】和【pytz】；  
+- **chardet** 通常无额外依赖。  
 
-#### **任务创建步骤**
-1. 程序首次运行时会自动创建定时任务。
-2. 如果任务已存在，则不会重复创建，不覆盖创建，需要手动删除。
-3. 可以通过任务计划程序查看和管理该任务。
+### 1. 离线安装 Python 3.11
+
+请先在 [Python 官网](https://www.python.org/downloads/) 或内网一粒云02账户下载对应平台的 Python 3.11 离线安装包，并拷贝到离线机器后进行安装。
 
 ---
 
-### 🛠 **7. 常见问题**
+### 2. 联网环境下下载所有依赖包
 
-1. **任务创建失败**
-   - 确保以管理员权限运行 `SecurityCheck_v5.exe`。
-   - 检查任务计划程序是否有足够的权限创建任务。
+在联网环境下，先在目标目录下建立两个文件夹：  
+- `offline_pip`（用于存放 pip、setuptools、wheel 以及 openpyxl 及其依赖）  
+- `packages`（用于存放 pandas、chardet 以及 pandas 的其它依赖）
 
-2. **任务未按预期运行**
-   - 确认任务计划程序中的任务是否启用。
-   - 检查任务的触发器设置是否正确。
+**(1) 下载 pip、setuptools、wheel 及 openpyxl 相关包，或从内网一粒云02账户直接下载：**
 
-3. **任务日志**
-   - 可以在任务计划程序中查看任务的历史记录和日志，以了解任务的执行情况。
+```bash
+pip download pip setuptools wheel -d ./offline_pip --no-binary :all:
+pip download openpyxl et_xmlfile jdcal -d ./offline_pip
+```
+
+**(2) 下载 pandas、chardet 及其所有依赖（numpy、python-dateutil、pytz）：**
+
+```bash
+pip download pandas chardet numpy python-dateutil pytz -d ./packages
+```
+
+---
+
+### 3. 离线环境安装步骤
+
+将上一步下载好的两个文件夹（`offline_pip` 和 `packages`）连同 Python 3.11 安装包，一同拷贝到离线机器。然后依次执行以下命令：
+
+**(1) 安装 setuptools 和 wheel：**
+
+```bash
+python -m pip install --no-index --find-links=./offline_pip setuptools wheel
+```
+
+**(2) 安装 pip：**
+
+```bash
+python -m pip install --no-index --find-links=./offline_pip pip
+```
+
+**(3) 离线安装 openpyxl 及其依赖：**
+
+```bash
+python -m pip install --no-index --find-links=./offline_pip openpyxl et_xmlfile jdcal
+```
+
+**(4) 离线安装 pandas、chardet 及其依赖：**
+
+```bash
+pip install --no-index --find-links=./packages pandas chardet numpy python-dateutil pytz
+```
+
