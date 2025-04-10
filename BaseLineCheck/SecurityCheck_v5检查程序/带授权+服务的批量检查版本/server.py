@@ -15,6 +15,8 @@ if not os.path.exists(MONITOR_DIR):
 class LogHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path == '/':
+            self.serve_file('README.html', 'text/html')
+        if self.path == '/download':
             self.serve_file('check.zip', 'application/zip', as_attachment=True)
         else:
             self.send_error(404)
