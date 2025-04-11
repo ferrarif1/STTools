@@ -692,35 +692,91 @@ try {
     Write-Host "`n【3】高危端口状态检测（防火墙规则检查）："
     $ports = @(22, 23, 135, 137, 138, 139, 445, 455, 3389, 4899)
     foreach ($port in $ports) {
-        $rules = netsh advfirewall firewall show rule name=all | Out-String
+        # 获取所有规则的详细信息
+        $inboundRules = netsh advfirewall firewall show rule name=all dir=in | Out-String
+        $outboundRules = netsh advfirewall firewall show rule name=all dir=out | Out-String
         $isBlocked = $false
-        if ($rules -match "LocalPort:\s*$port\b" -or 
-            $rules -match "RemotePort:\s*$port\b" -or 
-            $rules -match "Port:\s*$port\b" -or
-            $rules -match "本地端口:\s*$port\b" -or
-            $rules -match "远程端口:\s*$port\b" -or
-            $rules -match "端口:\s*$port\b") {
-            $isBlocked = $true
-        } else {
+
+        # 检查预定义规则集
+        $predefinedRules = @(
+            "RemoteDesktop-UserMode-In-TCP",
+            "File and Printer Sharing",
+            "文件和打印机共享",
+            "远程桌面"
+        )
+
+        # 更全面的端口检测模式
+        $portPatterns = @(
+            "LocalPort:\s*$port\b",
+            "RemotePort:\s*$port\b",
+            "Port:\s*$port\b",
+            "本地端口:\s*$port\b",
+            "远程端口:\s*$port\b",
+            "端口:\s*$port\b",
+            # 添加更多可能的端口表示方式
+            "端口 = $port\b",
+            "Port = $port\b"
+        )
+
+        # 检查入站规则
+        foreach ($pattern in $portPatterns) {
+            if ($inboundRules -match $pattern) {
+                $matchedRule = $inboundRules -split "`n" | Where-Object { $_ -match $pattern }
+                # 确认规则是否为阻止规则
+                if ($matchedRule -match "Action:\s*Block" -or $matchedRule -match "操作:\s*阻止") {
+                    $isBlocked = $true
+                    break
+                }
+            }
+        }
+
+        # 如果入站未阻止，检查出站规则
+        if (-not $isBlocked) {
+            foreach ($pattern in $portPatterns) {
+                if ($outboundRules -match $pattern) {
+                    $matchedRule = $outboundRules -split "`n" | Where-Object { $_ -match $pattern }
+                    if ($matchedRule -match "Action:\s*Block" -or $matchedRule -match "操作:\s*阻止") {
+                        $isBlocked = $true
+                        break
+                    }
+                }
+            }
+        }
+
+        # 检查端口范围规则
+        if (-not $isBlocked) {
+            $rules = $inboundRules + $outboundRules
             $rules -split "`n" | ForEach-Object {
                 if ($_ -match "(LocalPort|RemotePort|Port|本地端口|远程端口|端口):\s*(\d+)-(\d+)") {
                     $start = [int]$matches[2]
                     $end = [int]$matches[3]
                     if ($port -ge $start -and $port -le $end) {
-                        $isBlocked = $true
+                        # 确认包含该端口范围的规则是否为阻止规则
+                        $ruleBlock = $_ | Select-String -Pattern "Action:\s*Block|操作:\s*阻止"
+                        if ($ruleBlock) {
+                            $isBlocked = $true
+                        }
                     }
                 }
             }
         }
+
         if ($isBlocked) {
-            Write-Success "端口 $port 存在防火墙规则。"
+            Write-Success "端口 $port 已被防火墙策略封禁。"
+            $Results += @{
+                Item       = "端口 $port"
+                Issue      = "端口已被封禁"
+                Suggestion = "无"
+            }
         } else {
-            Write-ErrorMsg "端口 $port 未设置防火墙封禁。"
-            Write-Instruction "建议手动设置防火墙封禁该端口。"
+            Write-ErrorMsg "端口 $port 未被防火墙策略封禁。"
+            Write-Instruction "建议手动设置防火墙封禁该端口。可通过以下命令：
+            netsh advfirewall firewall add rule name=`"Block_Port_$port`" dir=in action=block protocol=TCP localport=$port
+            netsh advfirewall firewall add rule name=`"Block_Port_$port`" dir=out action=block protocol=TCP localport=$port"
             $Results += @{
                 Item       = "高危端口状态检测"
-                Issue      = "端口 $port 未设置防火墙封禁。"
-                Suggestion = "建议手动设置防火墙封禁该端口。"
+                Issue      = "端口 $port 未被封禁"
+                Suggestion = "请使用防火墙封禁该端口"
             }
         }
     }
