@@ -688,7 +688,7 @@ try {
 
     Write-Seperator
 
-    # 3. 高危端口状态检测（防火墙规则检查）
+   # 3. 高危端口状态检测（防火墙规则检查）
     Write-Host "`n【3】高危端口状态检测（防火墙规则检查）："
     $ports = @(22, 23, 135, 137, 138, 139, 445, 455, 3389, 4899)
 
@@ -735,7 +735,8 @@ try {
         return $false
     }
 
-    # 辅助函数：检测预定义规则（如果规则行中包含预定义关键字，同时含有阻止动作，并且在行中找到与目标端口相关的数字时，也认为端口被阻止）
+    # 辅助函数：检测预定义规则（如果规则行中包含预定义关键字，同时含有阻止动作，
+    # 并且在行中找到与目标端口相关的数字时，也认为端口被阻止）
     function Test-PredefinedRule {
         param(
             [array]$rulesArray,
@@ -751,8 +752,10 @@ try {
                             return $true
                         }
                     }
-                    # 如果未明确出现端口号，但规则名称匹配预定义项，则可以视情况认为该规则适用于目标端口（可根据实际情况调整）
-                    # 在此可选：直接返回 $true
+                    # 如果未明确出现端口号，但规则名称匹配预定义项，
+                    # 根据实际情况也可以直接认为该规则适用于目标端口（例如直接返回 $true）
+                    # 可视需求启用下行：
+                    # return $true
                 }
             }
         }
@@ -763,11 +766,11 @@ try {
         $isBlocked = $false
 
         # 先检测入站和出站规则中是否明确封禁当前端口
-        if (Test-BlockedRule -rulesArray $inboundRules -port $port -or Test-BlockedRule -rulesArray $outboundRules -port $port) {
+        if ((Test-BlockedRule -rulesArray $inboundRules -port $port) -or (Test-BlockedRule -rulesArray $outboundRules -port $port)) {
             $isBlocked = $true
         }
         # 若明确匹配未成功，再检测预定义规则
-        elseif (Test-PredefinedRule -rulesArray $inboundRules -port $port -or Test-PredefinedRule -rulesArray $outboundRules -port $port) {
+        elseif ((Test-PredefinedRule -rulesArray $inboundRules -port $port) -or (Test-PredefinedRule -rulesArray $outboundRules -port $port)) {
             $isBlocked = $true
         }
         
@@ -777,7 +780,7 @@ try {
             foreach ($line in $allRules) {
                 if ($line -match "(LocalPort|RemotePort|Port|本地端口|远程端口|端口):\s*(\d+)-(\d+)") {
                     $start = [int]$matches[2]
-                    $end = [int]$matches[3]
+                    $end   = [int]$matches[3]
                     if ($port -ge $start -and $port -le $end) {
                         if ($line -match "Action:\s*Block" -or $line -match "操作:\s*阻止") {
                             $isBlocked = $true
@@ -795,11 +798,12 @@ try {
                 Issue      = "端口已被封禁"
                 Suggestion = "无"
             }
-        } else {
+        }
+        else {
             Write-ErrorMsg "端口 $port 未被防火墙策略封禁。"
             Write-Instruction "建议手动设置防火墙封禁该端口。可通过以下命令：
-            netsh advfirewall firewall add rule name=`"Block_Port_$port`" dir=in action=block protocol=TCP localport=$port
-            netsh advfirewall firewall add rule name=`"Block_Port_$port`" dir=out action=block protocol=TCP localport=$port"
+                netsh advfirewall firewall add rule name=`"Block_Port_$port`" dir=in action=block protocol=TCP localport=$port
+                netsh advfirewall firewall add rule name=`"Block_Port_$port`" dir=out action=block protocol=TCP localport=$port"
             $Results += @{
                 Item       = "高危端口状态检测"
                 Issue      = "端口 $port 未被封禁"
