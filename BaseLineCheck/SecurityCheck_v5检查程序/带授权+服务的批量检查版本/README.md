@@ -226,15 +226,11 @@ pip download pandas chardet numpy python-dateutil pytz -d ./packages
    ```bash
    python -m pip install --no-index --find-links=./offline_pip setuptools wheel
    ```
-2. **安装 pip：**
+2. **安装 pip（python里可能已经自带）：**
    ```bash
    python -m pip install --no-index --find-links=./offline_pip pip
    ```
-3. **离线安装 openpyxl 及其依赖：**
+3. **离线安装 openpyxl 等依赖：**
    ```bash
-   python -m pip install --no-index --find-links=./offline_pip openpyxl et_xmlfile jdcal
-   ```
-4. **离线安装 pandas、chardet 及其依赖：**
-   ```bash
-   pip install --no-index --find-links=./packages pandas chardet numpy python-dateutil pytz
+   pip install --no-index --find-links=./packages openpyxl et_xmlfile jdcal pandas chardet numpy python-dateutil pytz
    ```

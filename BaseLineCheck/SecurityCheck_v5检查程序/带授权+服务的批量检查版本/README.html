@@ -238,11 +238,9 @@ pip download openpyxl et_xmlfile jdcal <span class="token parameter variable">-d
 <ol>
 <li><strong>安装 setuptools 和 wheel：</strong><pre data-role="codeBlock" data-info="bash" class="language-bash bash"><code>python <span class="token parameter variable">-m</span> pip <span class="token function">install</span> --no-index --find-links<span class="token operator">=</span>./offline_pip setuptools wheel
 </code></pre></li>
-<li><strong>安装 pip：</strong><pre data-role="codeBlock" data-info="bash" class="language-bash bash"><code>python <span class="token parameter variable">-m</span> pip <span class="token function">install</span> --no-index --find-links<span class="token operator">=</span>./offline_pip pip
+<li><strong>安装 pip（python里可能已经自带）：</strong><pre data-role="codeBlock" data-info="bash" class="language-bash bash"><code>python <span class="token parameter variable">-m</span> pip <span class="token function">install</span> --no-index --find-links<span class="token operator">=</span>./offline_pip pip
 </code></pre></li>
-<li><strong>离线安装 openpyxl 及其依赖：</strong><pre data-role="codeBlock" data-info="bash" class="language-bash bash"><code>python <span class="token parameter variable">-m</span> pip <span class="token function">install</span> --no-index --find-links<span class="token operator">=</span>./offline_pip openpyxl et_xmlfile jdcal
-</code></pre></li>
-<li><strong>离线安装 pandas、chardet 及其依赖：</strong><pre data-role="codeBlock" data-info="bash" class="language-bash bash"><code>pip <span class="token function">install</span> --no-index --find-links<span class="token operator">=</span>./packages pandas chardet numpy python-dateutil pytz
+<li><strong>离线安装 openpyxl 等依赖：</strong><pre data-role="codeBlock" data-info="bash" class="language-bash bash"><code>pip <span class="token function">install</span> --no-index --find-links<span class="token operator">=</span>./packages openpyxl et_xmlfile jdcal pandas chardet numpy python-dateutil pytz
 </code></pre></li>
 </ol>
 
