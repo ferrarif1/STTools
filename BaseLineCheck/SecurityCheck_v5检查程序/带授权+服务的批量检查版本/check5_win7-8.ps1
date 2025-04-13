@@ -604,7 +604,6 @@ try {
             $Results += @{
                 Item       = "FTP服务"
                 Issue      = "FTP 服务已安装，状态为 $($ftpService.Status)"
-                Suggestion = "建议在'控制面板'>'启用或关闭Windows功能'中禁用 FTP 客户端。"
             }
         } else {
             Write-Success "FTP 客户端未启用。"
@@ -617,7 +616,6 @@ try {
             $Results += @{
                 Item       = "FTP服务"
                 Issue      = "检测到 FTP 端口 (21) 被监听"
-                Suggestion = "请停止使用 FTP 的相关服务或软件。"
             }
         } else {
             Write-Success "端口 21 未被监听。"
@@ -629,7 +627,6 @@ try {
             $Results += @{
                 Item       = "FTP服务"
                 Issue      = "检测到 FTP 服务已安装"
-                Suggestion = "建议禁用 FTP 服务（在服务管理器中设置为禁用）"
             }
         } else {
             Write-Success "系统未安装 FTP 服务。"
@@ -639,7 +636,6 @@ try {
         $Results += @{
             Item       = "FTP服务"
             Issue      = "检查过程中发生错误: $_"
-            Suggestion = "请手动检查FTP服务和端口21的状态"
         }
     }
   
@@ -658,7 +654,6 @@ try {
                 $Results += @{
                     Item       = "网卡详情"
                     Issue      = "网卡名称: $($nic.Name), 状态: $($nic.Status), 描述: $($nic.InterfaceDescription)"
-                    Suggestion = "无"
                 }
             }
         } else {
@@ -672,7 +667,6 @@ try {
             $Results += @{
                 Item       = "网卡信息"
                 Issue      = "检测到启用的无线网卡"
-                Suggestion = ""
             }
         } else {
             Write-Success "无线网卡已禁用或不存在。"
@@ -682,105 +676,79 @@ try {
         $Results += @{
             Item       = "网卡信息"
             Issue      = "获取网卡信息失败: $_"
-            Suggestion = "请检查网络适配器"
         }
     }
 
     Write-Seperator
 
-    # 3. 高危端口状态检测（防火墙规则检查）
+   # 3. 高危端口状态检测（防火墙规则检查）
     Write-Host "`n【3】高危端口状态检测（防火墙规则检查）："
+    # 定义要检测的端口列表
     $ports = @(22, 23, 135, 137, 138, 139, 445, 455, 3389, 4899)
+
+    # 获取入站和出站防火墙规则文本，并以连续空行作为分隔符拆分成规则块
+    $inboundRulesText = netsh advfirewall firewall show rule name=all dir=in | Out-String
+    $outboundRulesText = netsh advfirewall firewall show rule name=all dir=out | Out-String
+    $inboundRuleBlocks = $inboundRulesText -split "(\r?\n){2,}"
+    $outboundRuleBlocks = $outboundRulesText -split "(\r?\n){2,}"
+
+    # 辅助函数：判断单个规则块中是否存在对指定端口的阻止规则  
+    # 采用正则表达式提取“LocalPorts/RemotePorts/Port”后面的端口列表（支持逗号、分号或空格分隔）
+    # 并检查该规则块中是否同时含有阻止动作（Action: Block、操作: 阻止 或 Deny）
+    function IsPortBlockedInRule {
+        param(
+            [string]$ruleBlock,
+            [int]$port
+        )
+        # 匹配端口列表的正则表达式
+        $portListPattern = "(Local\s*Ports?|Remote\s*Ports?|[Pp]ort)[\s:]+(?<ports>(\d+([\s,;]+)?)+)"
+        if ($ruleBlock -match $portListPattern) {
+            $portsMatched = $matches['ports']
+            # 以逗号、分号或空格分隔，过滤掉非数字部分并转换为整数数组
+            $portNumbers = $portsMatched -split "[,;\s]+" | Where-Object { $_ -match "^\d+$" } | ForEach-Object { [int]$_ }
+            if ($portNumbers -contains $port) {
+                # 判断规则块是否含有阻止动作（支持 Action: Block、操作: 阻止 或 Deny）
+                if ($ruleBlock -match "(Action|操作)[\s:]+(Block|阻止|Deny)") {
+                    return $true
+                }
+            }
+        }
+        return $false
+    }
+
+
     foreach ($port in $ports) {
-        # 获取所有规则的详细信息
-        $inboundRules = netsh advfirewall firewall show rule name=all dir=in | Out-String
-        $outboundRules = netsh advfirewall firewall show rule name=all dir=out | Out-String
-        $isBlocked = $false
+        $inboundBlocked = $false
+        $outboundBlocked = $false
 
-        # 检查预定义规则集
-        $predefinedRules = @(
-            "RemoteDesktop-UserMode-In-TCP",
-            "File and Printer Sharing",
-            "文件和打印机共享",
-            "远程桌面"
-        )
-
-        # 更全面的端口检测模式
-        $portPatterns = @(
-            "LocalPort:\s*$port\b",
-            "RemotePort:\s*$port\b",
-            "Port:\s*$port\b",
-            "本地端口:\s*$port\b",
-            "远程端口:\s*$port\b",
-            "端口:\s*$port\b",
-            # 添加更多可能的端口表示方式
-            "端口 = $port\b",
-            "Port = $port\b"
-        )
-
-        # 检查入站规则
-        foreach ($pattern in $portPatterns) {
-            if ($inboundRules -match $pattern) {
-                $matchedRule = $inboundRules -split "`n" | Where-Object { $_ -match $pattern }
-                # 确认规则是否为阻止规则
-                if ($matchedRule -match "Action:\s*Block" -or $matchedRule -match "操作:\s*阻止") {
-                    $isBlocked = $true
-                    break
-                }
+        # 检查入站规则块
+        foreach ($block in $inboundRuleBlocks) {
+            if (IsPortBlockedInRule -ruleBlock $block -port $port) {
+                $inboundBlocked = $true
+                break
+            }
+        }
+        # 检查出站规则块
+        foreach ($block in $outboundRuleBlocks) {
+            if (IsPortBlockedInRule -ruleBlock $block -port $port) {
+                $outboundBlocked = $true
+                break
             }
         }
 
-        # 如果入站未阻止，检查出站规则
-        if (-not $isBlocked) {
-            foreach ($pattern in $portPatterns) {
-                if ($outboundRules -match $pattern) {
-                    $matchedRule = $outboundRules -split "`n" | Where-Object { $_ -match $pattern }
-                    if ($matchedRule -match "Action:\s*Block" -or $matchedRule -match "操作:\s*阻止") {
-                        $isBlocked = $true
-                        break
-                    }
-                }
-            }
+        if ($inboundBlocked -or $outboundBlocked) {
+            Write-Host "端口 $port 已被防火墙封禁 (入站：$inboundBlocked, 出站：$outboundBlocked)" -ForegroundColor Green
         }
-
-        # 检查端口范围规则
-        if (-not $isBlocked) {
-            $rules = $inboundRules + $outboundRules
-            $rules -split "`n" | ForEach-Object {
-                if ($_ -match "(LocalPort|RemotePort|Port|本地端口|远程端口|端口):\s*(\d+)-(\d+)") {
-                    $start = [int]$matches[2]
-                    $end = [int]$matches[3]
-                    if ($port -ge $start -and $port -le $end) {
-                        # 确认包含该端口范围的规则是否为阻止规则
-                        $ruleBlock = $_ | Select-String -Pattern "Action:\s*Block|操作:\s*阻止"
-                        if ($ruleBlock) {
-                            $isBlocked = $true
-                        }
-                    }
-                }
-            }
-        }
-
-        if ($isBlocked) {
-            Write-Success "端口 $port 已被防火墙策略封禁。"
+        else {
+            Write-Host "端口 $port 未被防火墙封禁。" -ForegroundColor Red
+            Write-Host "建议在控制面板 -> 防火墙 -> 高级设置中添加入站和出站规则封禁该端口：$port" -ForegroundColor Yellow
             $Results += @{
                 Item       = "端口 $port"
-                Issue      = "端口已被封禁"
-                Suggestion = "无"
-            }
-        } else {
-            Write-ErrorMsg "端口 $port 未被防火墙策略封禁。"
-            Write-Instruction "建议手动设置防火墙封禁该端口。可通过以下命令：
-            netsh advfirewall firewall add rule name=`"Block_Port_$port`" dir=in action=block protocol=TCP localport=$port
-            netsh advfirewall firewall add rule name=`"Block_Port_$port`" dir=out action=block protocol=TCP localport=$port"
-            $Results += @{
-                Item       = "高危端口状态检测"
-                Issue      = "端口 $port 未被封禁"
-                Suggestion = "请使用防火墙封禁该端口"
+                Issue      = "端口未被封禁"
             }
         }
     }
- 
+
     Write-Seperator
 
 
@@ -797,7 +765,6 @@ try {
             $Results += @{
                 Item       = "IPv6"
                 Issue      = "IPv6 未完全禁用 (DisabledComponents = $ipv6Value)"
-                Suggestion = "请设置 DisabledComponents = 255"
             }
         }
     } catch {
@@ -814,7 +781,6 @@ try {
             $Results += @{
                 Item       = "高危漏洞修复检查"
                 Issue      = "最近安装的更新：$($hotfix.HotFixID)，时间：$($hotfix.InstalledOn)"
-                Suggestion = ""
             }
         } else {
             Write-ErrorMsg "未获取到更新信息。"
@@ -824,7 +790,6 @@ try {
         $Results += @{
             Item       = "高危漏洞修复检查"
             Issue      = "检查更新失败"
-            Suggestion = ""
         }
     }
     Write-Seperator
@@ -839,14 +804,12 @@ try {
         $Results += @{
             Item       = "密码策略"
             Issue      = "net accounts 输出: $netAccOutput"
-            Suggestion = "将最长密码有效期设置为不超过 90 天"
         }
     } catch {
         Write-ErrorMsg "获取密码策略信息失败: $_"
         $Results += @{
             Item       = "密码策略"
             Issue      = "获取失败: $_"
-            Suggestion = "检查本地安全策略"
         }
     }
     Write-Seperator
@@ -864,23 +827,16 @@ try {
                 $Results += @{
                     Item       = "Guest 用户"
                     Issue      = "Guest 用户启用"
-                    Suggestion = "请禁用 Guest 用户"
                 }
             }
         } else {
             Write-Success "未检测到 Guest 用户（可能已删除）。"
-            $Results += @{
-                Item       = "Guest 用户"
-                Issue      = "未检测到"
-                Suggestion = ""
-            }
         }
     } catch {
         Write-ErrorMsg "获取 Guest 用户信息失败: $_"
         $Results += @{
             Item       = "Guest 用户"
             Issue      = "获取信息失败: $_"
-            Suggestion = "检查本地用户"
         }
     }
     Write-Seperator
@@ -897,7 +853,6 @@ try {
             $Results += @{
                 Item       = "U盘自动播放"
                 Issue      = "未完全禁用 (NoDriveTypeAutoRun = $noDriveValue)"
-                Suggestion = "请修改为 255"
             }
         }
     } catch {
@@ -905,7 +860,6 @@ try {
         $Results += @{
             Item       = "U盘自动播放"
             Issue      = "获取设置失败: $_"
-            Suggestion = "请手动检查注册表"
         }
     }
 
@@ -922,14 +876,12 @@ try {
             $Results += @{
                 Item       = "Google Chrome"
                 Issue      = "版本：$chromeVersion"
-                Suggestion = "请确认是否为最新版本"
             }
         } catch {
             Write-ErrorMsg "获取 Google Chrome 版本信息失败: $_"
             $Results += @{
                 Item       = "Google Chrome"
                 Issue      = "获取版本信息失败: $_"
-                Suggestion = "请手动检查Chrome版本"
             }
         }
     } else {
@@ -937,7 +889,6 @@ try {
         $Results += @{
             Item       = "Google Chrome"
             Issue      = "未检测到"
-            Suggestion = "如需使用，请安装Google Chrome"
         }
     }
     Write-Seperator
@@ -961,18 +912,12 @@ try {
 
     if ($timeout -and $timeout -le 600) {
         Write-Success "锁屏策略符合要求（超时时间：$timeout 秒）。"
-        $Results += @{
-            Item       = "锁屏策略"
-            Issue      = "超时时间：$timeout 秒"
-            Suggestion = "无"
-        }
     } else {
         Write-ErrorMsg "锁屏策略不符合安全要求！当前设置：超时时间=$timeout 秒"
         Write-Instruction "请打开组策略编辑器（gpedit.msc），依次导航至【计算机配置】>【管理模板】>【控制面板】>【个性化】，将屏幕保护程序超时时间设置为不超过 600 秒，并启用屏幕保护程序需要密码。"
         $Results += @{
             Item       = "锁屏策略"
             Issue      = "超时时间=$timeout 秒"
-            Suggestion = "请设置超时时间不超过600秒并启用密码保护"
         }
     }
     Write-Seperator
