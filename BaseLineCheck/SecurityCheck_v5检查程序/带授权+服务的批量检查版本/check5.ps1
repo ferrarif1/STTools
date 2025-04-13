@@ -690,127 +690,63 @@ try {
 
    # 3. 高危端口状态检测（防火墙规则检查）
     Write-Host "`n【3】高危端口状态检测（防火墙规则检查）："
+    # 定义要检测的端口列表
     $ports = @(22, 23, 135, 137, 138, 139, 445, 455, 3389, 4899)
 
-    # 获取所有规则的详细信息，并按行拆分
+    # 获取入站和出站防火墙规则文本，并以连续空行作为分隔符拆分为规则块
     $inboundRulesText = netsh advfirewall firewall show rule name=all dir=in | Out-String
     $outboundRulesText = netsh advfirewall firewall show rule name=all dir=out | Out-String
-    $inboundRules = $inboundRulesText -split "`n"
-    $outboundRules = $outboundRulesText -split "`n"
+    $inboundRuleBlocks = $inboundRulesText -split "(\r?\n){2,}"
+    $outboundRuleBlocks = $outboundRulesText -split "(\r?\n){2,}"
 
-    # 预定义规则列表（针对某些规则名可能包含特定服务，例如远程桌面、打印机共享）
-    $predefinedRules = @(
-        "RemoteDesktop-UserMode-In-TCP",
-        "File and Printer Sharing",
-        "文件和打印机共享",
-        "远程桌面"
-    )
-
-    # 辅助函数：检测当前规则行集合中是否有针对目标端口的阻止规则
-    function Test-BlockedRule {
-        param(
-            [array]$rulesArray,
-            [int]$port
-        )
-        # 定义更全面的端口检测模式
-        $portPatterns = @(
-            "LocalPort:\s*$port\b",
-            "RemotePort:\s*$port\b",
-            "Port:\s*$port\b",
-            "本地端口:\s*$port\b",
-            "远程端口:\s*$port\b",
-            "端口:\s*$port\b",
-            "端口\s*=\s*$port\b",
-            "Port\s*=\s*$port\b"
-        )
-        foreach ($line in $rulesArray) {
-            foreach ($pattern in $portPatterns) {
-                if ($line -match $pattern) {
-                    if ($line -match "Action:\s*Block" -or $line -match "操作:\s*阻止") {
-                        return $true
-                    }
-                }
-            }
+    # 辅助函数：判断单个规则块中是否存在对指定端口的阻止规则
+    function IsPortBlockedInRule($ruleBlock, [int]$port) {
+        # 首先判断该规则块中是否包含端口相关的信息
+        # 这里同时匹配 LocalPort、RemotePort 以及单独 Port 的情况（可能因语言不同，字段也可能出现中文）
+        $portPattern = "(LocalPorts?|RemotePorts?|[Pp]ort)[\s:]+$port\b"
+        # 判断规则块中是否存在“阻止”动作，Action 或 操作 后面一般跟 Block、阻止 或 Deny（有时可能出现 Deny）
+        $actionPattern = "(Action|操作)[\s:]+(Block|阻止|Deny)"
+        if (($ruleBlock -match $portPattern) -and ($ruleBlock -match $actionPattern)) {
+            return $true
         }
         return $false
     }
 
-    # 辅助函数：检测预定义规则（如果规则行中包含预定义关键字，同时含有阻止动作，
-    # 并且在行中找到与目标端口相关的数字时，也认为端口被阻止）
-    function Test-PredefinedRule {
-        param(
-            [array]$rulesArray,
-            [int]$port
-        )
-        foreach ($ruleName in $predefinedRules) {
-            foreach ($line in $rulesArray) {
-                if ($line -match $ruleName -and ($line -match "Action:\s*Block" -or $line -match "操作:\s*阻止")) {
-                    # 如果规则中带有端口描述，则进一步判断该行是否包含当前端口
-                    if ($line -match "(\d+)") {
-                        $foundPort = [int]$matches[1]
-                        if ($foundPort -eq $port) {
-                            return $true
-                        }
-                    }
-                    # 如果未明确出现端口号，但规则名称匹配预定义项，
-                    # 根据实际情况也可以直接认为该规则适用于目标端口（例如直接返回 $true）
-                    # 可视需求启用下行：
-                    # return $true
-                }
-            }
-        }
-        return $false
-    }
+    # 初始化结果字典
+    $results = @{}
 
     foreach ($port in $ports) {
-        $isBlocked = $false
+        $inboundBlocked = $false
+        $outboundBlocked = $false
 
-        # 先检测入站和出站规则中是否明确封禁当前端口
-        if ((Test-BlockedRule -rulesArray $inboundRules -port $port) -or (Test-BlockedRule -rulesArray $outboundRules -port $port)) {
-            $isBlocked = $true
+        # 检查所有入站规则块
+        foreach ($block in $inboundRuleBlocks) {
+            if (IsPortBlockedInRule $block $port) {
+                $inboundBlocked = $true
+                break
+            }
         }
-        # 若明确匹配未成功，再检测预定义规则
-        elseif ((Test-PredefinedRule -rulesArray $inboundRules -port $port) -or (Test-PredefinedRule -rulesArray $outboundRules -port $port)) {
-            $isBlocked = $true
-        }
-        
-        # 检查端口范围规则（范围型规则可能包含目标端口）
-        if (-not $isBlocked) {
-            $allRules = $inboundRules + $outboundRules
-            foreach ($line in $allRules) {
-                if ($line -match "(LocalPort|RemotePort|Port|本地端口|远程端口|端口):\s*(\d+)-(\d+)") {
-                    $start = [int]$matches[2]
-                    $end   = [int]$matches[3]
-                    if ($port -ge $start -and $port -le $end) {
-                        if ($line -match "Action:\s*Block" -or $line -match "操作:\s*阻止") {
-                            $isBlocked = $true
-                            break
-                        }
-                    }
-                }
+        # 检查所有出站规则块
+        foreach ($block in $outboundRuleBlocks) {
+            if (IsPortBlockedInRule $block $port) {
+                $outboundBlocked = $true
+                break
             }
         }
 
-        if ($isBlocked) {
-            Write-Success "端口 $port 已被防火墙策略封禁。"
-            $Results += @{
-                Item       = "端口 $port"
-                Issue      = "端口已被封禁"
-                Suggestion = "无"
-            }
+        if ($inboundBlocked -or $outboundBlocked) {
+            Write-Host "端口 $port 已被防火墙封禁 (入站：$inboundBlocked, 出站：$outboundBlocked)" -ForegroundColor Green
+            $results[$port] = "封禁"
         }
         else {
-            Write-ErrorMsg "端口 $port 未被防火墙策略封禁。"
-            Write-Instruction "建议手动设置防火墙封禁该端口。可通过以下命令：
-                netsh advfirewall firewall add rule name=`"Block_Port_$port`" dir=in action=block protocol=TCP localport=$port
-                netsh advfirewall firewall add rule name=`"Block_Port_$port`" dir=out action=block protocol=TCP localport=$port"
-            $Results += @{
-                Item       = "高危端口状态检测"
-                Issue      = "端口 $port 未被封禁"
-                Suggestion = "请使用防火墙封禁该端口"
-            }
+            Write-Host "端口 $port 未被防火墙封禁。" -ForegroundColor Red
+            $results[$port] = "未封禁"
         }
     }
+
+    # 输出检测结果
+    Write-Host "`n最终检测结果："
+    $results.GetEnumerator() | Sort-Object Name | Format-Table -AutoSize
 
     Write-Seperator
 
