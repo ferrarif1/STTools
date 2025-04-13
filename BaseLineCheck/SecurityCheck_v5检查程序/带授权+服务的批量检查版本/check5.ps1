@@ -691,21 +691,28 @@ try {
     # 3. 高危端口状态检测（防火墙规则检查）
     Write-Host "`n【3】高危端口状态检测（防火墙规则检查）："
     $ports = @(22, 23, 135, 137, 138, 139, 445, 455, 3389, 4899)
-    foreach ($port in $ports) {
-        # 获取所有规则的详细信息
-        $inboundRules = netsh advfirewall firewall show rule name=all dir=in | Out-String
-        $outboundRules = netsh advfirewall firewall show rule name=all dir=out | Out-String
-        $isBlocked = $false
 
-        # 检查预定义规则集
-        $predefinedRules = @(
-            "RemoteDesktop-UserMode-In-TCP",
-            "File and Printer Sharing",
-            "文件和打印机共享",
-            "远程桌面"
+    # 获取所有规则的详细信息，并按行拆分
+    $inboundRulesText = netsh advfirewall firewall show rule name=all dir=in | Out-String
+    $outboundRulesText = netsh advfirewall firewall show rule name=all dir=out | Out-String
+    $inboundRules = $inboundRulesText -split "`n"
+    $outboundRules = $outboundRulesText -split "`n"
+
+    # 预定义规则列表（针对某些规则名可能包含特定服务，例如远程桌面、打印机共享）
+    $predefinedRules = @(
+        "RemoteDesktop-UserMode-In-TCP",
+        "File and Printer Sharing",
+        "文件和打印机共享",
+        "远程桌面"
+    )
+
+    # 辅助函数：检测当前规则行集合中是否有针对目标端口的阻止规则
+    function Test-BlockedRule {
+        param(
+            [array]$rulesArray,
+            [int]$port
         )
-
-        # 更全面的端口检测模式
+        # 定义更全面的端口检测模式
         $portPatterns = @(
             "LocalPort:\s*$port\b",
             "RemotePort:\s*$port\b",
@@ -713,48 +720,68 @@ try {
             "本地端口:\s*$port\b",
             "远程端口:\s*$port\b",
             "端口:\s*$port\b",
-            # 添加更多可能的端口表示方式
-            "端口 = $port\b",
-            "Port = $port\b"
+            "端口\s*=\s*$port\b",
+            "Port\s*=\s*$port\b"
         )
-
-        # 检查入站规则
-        foreach ($pattern in $portPatterns) {
-            if ($inboundRules -match $pattern) {
-                $matchedRule = $inboundRules -split "`n" | Where-Object { $_ -match $pattern }
-                # 确认规则是否为阻止规则
-                if ($matchedRule -match "Action:\s*Block" -or $matchedRule -match "操作:\s*阻止") {
-                    $isBlocked = $true
-                    break
-                }
-            }
-        }
-
-        # 如果入站未阻止，检查出站规则
-        if (-not $isBlocked) {
+        foreach ($line in $rulesArray) {
             foreach ($pattern in $portPatterns) {
-                if ($outboundRules -match $pattern) {
-                    $matchedRule = $outboundRules -split "`n" | Where-Object { $_ -match $pattern }
-                    if ($matchedRule -match "Action:\s*Block" -or $matchedRule -match "操作:\s*阻止") {
-                        $isBlocked = $true
-                        break
+                if ($line -match $pattern) {
+                    if ($line -match "Action:\s*Block" -or $line -match "操作:\s*阻止") {
+                        return $true
                     }
                 }
             }
         }
+        return $false
+    }
 
-        # 检查端口范围规则
+    # 辅助函数：检测预定义规则（如果规则行中包含预定义关键字，同时含有阻止动作，并且在行中找到与目标端口相关的数字时，也认为端口被阻止）
+    function Test-PredefinedRule {
+        param(
+            [array]$rulesArray,
+            [int]$port
+        )
+        foreach ($ruleName in $predefinedRules) {
+            foreach ($line in $rulesArray) {
+                if ($line -match $ruleName -and ($line -match "Action:\s*Block" -or $line -match "操作:\s*阻止")) {
+                    # 如果规则中带有端口描述，则进一步判断该行是否包含当前端口
+                    if ($line -match "(\d+)") {
+                        $foundPort = [int]$matches[1]
+                        if ($foundPort -eq $port) {
+                            return $true
+                        }
+                    }
+                    # 如果未明确出现端口号，但规则名称匹配预定义项，则可以视情况认为该规则适用于目标端口（可根据实际情况调整）
+                    # 在此可选：直接返回 $true
+                }
+            }
+        }
+        return $false
+    }
+
+    foreach ($port in $ports) {
+        $isBlocked = $false
+
+        # 先检测入站和出站规则中是否明确封禁当前端口
+        if (Test-BlockedRule -rulesArray $inboundRules -port $port -or Test-BlockedRule -rulesArray $outboundRules -port $port) {
+            $isBlocked = $true
+        }
+        # 若明确匹配未成功，再检测预定义规则
+        elseif (Test-PredefinedRule -rulesArray $inboundRules -port $port -or Test-PredefinedRule -rulesArray $outboundRules -port $port) {
+            $isBlocked = $true
+        }
+        
+        # 检查端口范围规则（范围型规则可能包含目标端口）
         if (-not $isBlocked) {
-            $rules = $inboundRules + $outboundRules
-            $rules -split "`n" | ForEach-Object {
-                if ($_ -match "(LocalPort|RemotePort|Port|本地端口|远程端口|端口):\s*(\d+)-(\d+)") {
+            $allRules = $inboundRules + $outboundRules
+            foreach ($line in $allRules) {
+                if ($line -match "(LocalPort|RemotePort|Port|本地端口|远程端口|端口):\s*(\d+)-(\d+)") {
                     $start = [int]$matches[2]
                     $end = [int]$matches[3]
                     if ($port -ge $start -and $port -le $end) {
-                        # 确认包含该端口范围的规则是否为阻止规则
-                        $ruleBlock = $_ | Select-String -Pattern "Action:\s*Block|操作:\s*阻止"
-                        if ($ruleBlock) {
+                        if ($line -match "Action:\s*Block" -or $line -match "操作:\s*阻止") {
                             $isBlocked = $true
+                            break
                         }
                     }
                 }
@@ -780,7 +807,7 @@ try {
             }
         }
     }
- 
+
     Write-Seperator
 
 
