@@ -586,15 +586,9 @@ try {
             $Results += @{
                 Item       = "FTP服务"
                 Issue      = "FTP 服务已安装，状态为 $($ftpService.Status)"
-                Suggestion = "请在【服务】中禁用 FTP 服务"
             }
         } else {
             Write-Success "未检测到FTP服务 (FTPSVC) 安装，符合安全要求。"
-            $Results += @{
-                Item       = "FTP服务"
-                Issue      = "未检测到FTP服务"
-                Suggestion = "无"
-            }
         }
         
         if ($ftpPort) {
@@ -603,15 +597,9 @@ try {
             $Results += @{
                 Item       = "FTP端口"
                 Issue      = "TCP 21 端口正在监听"
-                Suggestion = "请停止相关FTP服务或释放端口"
             }
         } else {
             Write-Success "未检测到TCP端口21（FTP）正在使用。"
-            $Results += @{
-                Item       = "FTP端口"
-                Issue      = "TCP 21 端口未监听"
-                Suggestion = "无"
-            }
         }
         
         if ($ftpInboundRules) {
@@ -623,15 +611,9 @@ try {
             $Results += @{
                 Item       = "FTP防火墙规则"
                 Issue      = "存在启用的FTP入站防火墙规则"
-                Suggestion = "请关闭这些规则或设置为阻止"
             }
         } else {
             Write-Success "未检测到允许FTP流量的防火墙入站规则。"
-            $Results += @{
-                Item       = "FTP防火墙规则"
-                Issue      = "无FTP防火墙入站规则"
-                Suggestion = "无"
-            }
         }
         
         if ($ftpClientInstalled) {
@@ -640,15 +622,9 @@ try {
             $Results += @{
                 Item       = "FTP客户端"
                 Issue      = "FTP客户端功能已启用"
-                Suggestion = "请在系统功能中取消 FTP 客户端 勾选"
             }
         } else {
             Write-Success "FTP客户端功能未启用，符合安全要求。"
-            $Results += @{
-                Item       = "FTP客户端"
-                Issue      = "FTP客户端未启用"
-                Suggestion = "无"
-            }
         }
         
         if (-not $ftpService -and -not $ftpPort -and -not $ftpInboundRules -and -not $ftpClientInstalled) {
@@ -660,7 +636,6 @@ try {
         $Results += @{
             Item       = "FTP检查"
             Issue      = "检查过程中发生错误: $_"
-            Suggestion = "请手动检查FTP服务和端口21的状态"
         }
     }
     Write-Seperator
@@ -677,7 +652,6 @@ try {
             $Results += @{
                 Item       = "网卡信息"
                 Issue      = "检测到 $($interfaces.Count) 个网卡"
-                Suggestion = "确认网卡状态是否符合预期"
             }
             
             # 添加每个网卡的详细信息
@@ -685,7 +659,6 @@ try {
                 $Results += @{
                     Item       = "网卡详情"
                     Issue      = "网卡名称: $($nic.Name), 状态: $($nic.Status), 描述: $($nic.InterfaceDescription)"
-                    Suggestion = "无"
                 }
             }
             
@@ -695,7 +668,6 @@ try {
                 $Results += @{
                     Item       = "网卡IP配置"
                     Issue      = "已获取网卡IP配置信息"
-                    Suggestion = "无"
                 }
                 
                 foreach ($nicDetail in $nicDetails) {
@@ -705,7 +677,6 @@ try {
                     $Results += @{
                         Item       = "网卡配置详情"
                         Issue      = "网卡: $($nicDetail.InterfaceAlias), IPv4: $ipv4, DNS: $dns"
-                        Suggestion = "无"
                     }
                 }
             }
@@ -714,7 +685,6 @@ try {
             $Results += @{
                 Item       = "网卡信息"
                 Issue      = "未检测到任何网卡"
-                Suggestion = "请检查网络硬件"
             }
         }
     } catch {
@@ -722,7 +692,6 @@ try {
         $Results += @{
             Item       = "网卡信息"
             Issue      = "获取网卡信息失败: $_"
-            Suggestion = "请检查网络适配器"
         }
     }
 
@@ -737,23 +706,12 @@ try {
             $Results += @{
                 Item       = "无线网卡"
                 Issue      = "存在未禁用的无线网卡: $activeNames"
-                Suggestion = "请禁用未使用的无线网卡"
             }
         } else {
             Write-Success "所有无线网卡均已禁用。"
-            $Results += @{
-                Item       = "无线网卡"
-                Issue      = "所有无线网卡均已禁用"
-                Suggestion = "无"
-            }
         }
     } else {
         Write-Host "未检测到无线网卡。"
-        $Results += @{
-            Item       = "无线网卡"
-            Issue      = "未检测到无线网卡"
-            Suggestion = "无"
-        }
     }
     Write-Seperator
 
@@ -770,18 +728,12 @@ try {
                         Where-Object { $_.LocalPort -eq "$port" }
             if ($fwInbound -or $fwOutbound) {
                 Write-Success "端口 $port 已被防火墙策略封禁（入站或出站）。"
-                $Results += @{
-                    Item       = "端口 $port"
-                    Issue      = "端口 $port 被封禁"
-                    Suggestion = "无"
-                }
             } else {
                 Write-ErrorMsg "端口 $port 未被防火墙策略封禁。"
                 Write-Instruction "请进入【控制面板】>【Windows Defender 防火墙】>【高级设置】，添加入站规则封禁该端口。"
                 $Results += @{
                     Item       = "端口 $port"
                     Issue      = "端口 $port 未封禁"
-                    Suggestion = "请封禁该端口"
                 }
             }
         } catch {
@@ -789,7 +741,6 @@ try {
             $Results += @{
                 Item       = "端口 $port"
                 Issue      = "检测异常: $_"
-                Suggestion = "检查防火墙配置"
             }
         }
     }
@@ -802,27 +753,20 @@ try {
         $ipv6Value = (Get-ItemProperty -Path $regPath -Name "DisabledComponents" -ErrorAction SilentlyContinue).DisabledComponents
         if ($ipv6Value -eq 255) {
             Write-Success "IPv6 已通过注册表方式禁用 (DisabledComponents = $ipv6Value)。"
-            $Results += @{
-                Item       = "IPv6"
-                Issue      = "IPv6 已禁用 (DisabledComponents = $ipv6Value)"
-                Suggestion = "无"
-            }
         } else {
             Write-ErrorMsg "IPv6 可能未完全禁用 (DisabledComponents = $ipv6Value)。"
-            Write-Instruction "建议使用注册表方式禁用 IPv6：打开【注册表编辑器】，定位到 HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip6\Parameters，创建或修改 DisabledComponents 的值为 255。"
+            # Write-Instruction "建议使用注册表方式禁用 IPv6：打开【注册表编辑器】，定位到 HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip6\Parameters，创建或修改 DisabledComponents 的值为 255。"
             $Results += @{
                 Item       = "IPv6"
                 Issue      = "IPv6 未完全禁用 (DisabledComponents = $ipv6Value)"
-                Suggestion = "请设置 DisabledComponents = 255"
             }
         }
     } catch {
         Write-ErrorMsg "未检测到 IPv6 禁用相关的注册表设置。"
-        Write-Instruction "请打开【注册表编辑器】，定位到 HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip6\Parameters，创建 DisabledComponents 并设置值为 255。"
+        # Write-Instruction "请打开【注册表编辑器】，定位到 HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip6\Parameters，创建 DisabledComponents 并设置值为 255。"
         $Results += @{
             Item       = "IPv6"
             Issue      = "未检测到相关注册表设置"
-            Suggestion = "请手动设置 DisabledComponents = 255"
         }
     }
     Write-Seperator
@@ -838,7 +782,6 @@ try {
             $Results += @{
                 Item       = "更新补丁"
                 Issue      = "最新更新：$($latest.HotFixID)，日期：$($latest.InstalledOn)"
-                Suggestion = "请核查补丁内容"
             }
         } else {
             Write-ErrorMsg "无法获取已安装更新信息。"
@@ -846,7 +789,6 @@ try {
             $Results += @{
                 Item       = "更新补丁"
                 Issue      = "无法获取更新信息"
-                Suggestion = "请检查 Windows 更新"
             }
         }
     } catch {
@@ -854,7 +796,6 @@ try {
         $Results += @{
             Item       = "更新补丁"
             Issue      = "获取更新信息失败: $_"
-            Suggestion = "请手动检查更新"
         }
     }
     Write-Seperator
@@ -869,14 +810,12 @@ try {
         $Results += @{
             Item       = "密码策略"
             Issue      = "net accounts 输出: $netAccOutput"
-            Suggestion = "将最长密码有效期设置为不超过 90 天"
         }
     } catch {
         Write-ErrorMsg "获取密码策略信息失败: $_"
         $Results += @{
             Item       = "密码策略"
             Issue      = "获取失败: $_"
-            Suggestion = "检查本地安全策略"
         }
     }
     Write-Seperator
@@ -888,34 +827,22 @@ try {
         if ($guest) {
             if ($guest.Enabled -eq $false) {
                 Write-Success "Guest 用户已禁用。"
-                $Results += @{
-                    Item       = "Guest 用户"
-                    Issue      = "已禁用"
-                    Suggestion = "无"
-                }
             } else {
                 Write-ErrorMsg "Guest 用户仍处于启用状态。"
                 Write-Instruction "请打开【计算机管理】>【本地用户和组】禁用 Guest 用户。"
                 $Results += @{
                     Item       = "Guest 用户"
                     Issue      = "仍启用"
-                    Suggestion = "请禁用 Guest 用户"
                 }
             }
         } else {
             Write-Success "未检测到 Guest 用户（可能已删除）。"
-            $Results += @{
-                Item       = "Guest 用户"
-                Issue      = "未检测到"
-                Suggestion = "无"
-            }
         }
     } catch {
         Write-ErrorMsg "获取 Guest 用户信息失败: $_"
         $Results += @{
             Item       = "Guest 用户"
             Issue      = "获取信息失败: $_"
-            Suggestion = "检查本地用户"
         }
     }
     Write-Seperator
@@ -927,18 +854,12 @@ try {
         $noDriveValue = (Get-ItemProperty -Path $regPathUSB -Name "NoDriveTypeAutoRun" -ErrorAction SilentlyContinue).NoDriveTypeAutoRun
         if ($noDriveValue -eq 255) {
             Write-Success "U盘自动播放已禁用 (NoDriveTypeAutoRun = $noDriveValue)。"
-            $Results += @{
-                Item       = "U盘自动播放"
-                Issue      = "已禁用 (NoDriveTypeAutoRun = $noDriveValue)"
-                Suggestion = "无"
-            }
         } else {
             Write-ErrorMsg "U盘自动播放可能未完全禁用 (NoDriveTypeAutoRun = $noDriveValue)。"
-            Write-Instruction "请打开【注册表编辑器】，定位到 HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\policies\Explorer，将 NoDriveTypeAutoRun 的值修改为 255。"
+            # Write-Instruction "请打开【注册表编辑器】，定位到 HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\policies\Explorer，将 NoDriveTypeAutoRun 的值修改为 255。"
             $Results += @{
                 Item       = "U盘自动播放"
                 Issue      = "未完全禁用 (NoDriveTypeAutoRun = $noDriveValue)"
-                Suggestion = "请修改为 255"
             }
         }
     } catch {
@@ -946,7 +867,6 @@ try {
         $Results += @{
             Item       = "U盘自动播放"
             Issue      = "获取设置失败: $_"
-            Suggestion = "请手动检查注册表"
         }
     }
     Write-Seperator
@@ -962,14 +882,12 @@ try {
             $Results += @{
                 Item       = "Google Chrome"
                 Issue      = "版本：$chromeVersion"
-                Suggestion = "请确认是否为最新版本"
             }
         } catch {
             Write-ErrorMsg "获取 Google Chrome 版本信息失败: $_"
             $Results += @{
                 Item       = "Google Chrome"
                 Issue      = "获取版本信息失败: $_"
-                Suggestion = "请手动检查Chrome版本"
             }
         }
     } else {
@@ -977,7 +895,6 @@ try {
         $Results += @{
             Item       = "Google Chrome"
             Issue      = "未检测到"
-            Suggestion = "如需使用，请安装Google Chrome"
         }
     }
     Write-Seperator
@@ -1001,18 +918,13 @@ try {
 
     if ($timeout -and $timeout -le 600) {
         Write-Success "锁屏策略符合要求（超时时间：$timeout 秒）。"
-        $Results += @{
-            Item       = "锁屏策略"
-            Issue      = "超时时间：$timeout 秒"
-            Suggestion = "无"
-        }
+       
     } else {
         Write-ErrorMsg "锁屏策略不符合安全要求！当前设置：超时时间=$timeout 秒"
         Write-Instruction "请打开组策略编辑器（gpedit.msc），依次导航至【计算机配置】>【管理模板】>【控制面板】>【个性化】，将屏幕保护程序超时时间设置为不超过 600 秒，并启用屏幕保护程序需要密码。"
         $Results += @{
             Item       = "锁屏策略"
             Issue      = "超时时间=$timeout 秒"
-            Suggestion = "请设置超时时间不超过600秒并启用密码保护"
         }
     }
     Write-Seperator
