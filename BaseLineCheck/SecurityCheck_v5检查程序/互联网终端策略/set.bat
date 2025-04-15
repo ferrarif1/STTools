@@ -1,16 +1,11 @@
 @echo off
-:: Automatically elevate: if not an administrator, re-run as administrator
-openfiles >nul 2>&1
-if %errorlevel% NEQ 0 (
-    echo Requesting administrator privileges...
-    powershell -Command "Start-Process '%~f0' -Verb runAs"
-    exit /b
-)
 
 echo ===============================
 echo Setting Windows password policy...
 echo ===============================
 
+echo [1] Setting guest account to inactive...
+net user guest /active:no
 :: Set maximum password age to 90 days
 echo [1] Setting maximum password age...
 net accounts /maxpwage:90
