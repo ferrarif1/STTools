@@ -16,7 +16,7 @@
   - **config.json**  
   - **ip_set_config.json**（由程序自动生成）  
   - 依赖补丁：  
-    - .NET Framework 安装包（dotNetFx35）  下载后先安装这个，再安装下面补丁之一，双击即可  
+    - .NET Framework 安装包（dotNetFx35）  如果没有.NET，需要先安装这个，再安装下面补丁之一，双击即可  
     - Windows 7 补丁（Win7AndW2K8R2-KB3191566-x64.msu）
     - Windows 8 补丁（Win8.1AndW2K12R2-KB3191564-x64.msu）
 
@@ -42,13 +42,7 @@
 
 > 其中，`SecurityCheck_winX-XX.exe` 根据您下载的版本不同可能为 SecurityCheck_win7-win8.exe 或 SecurityCheck_win10-11.exe。
 
-### 1.3 确认文件位置
-
-请确保下列文件存在于目标目录：
-- `C:\SecurityCheck_winX-XX.exe`
-- `C:\config.json`
-
-### 1.4 编辑 config.json 内容（主要设置 uploadUrl）
+### 1.3 编辑 config.json 内容（主要设置 uploadUrl）
 
 修改配置示例：
 
@@ -91,7 +85,8 @@
   ```
 
 - **后续运行：**  
-  程序启动后会自动检测当前网段是否被授权；若已授权则继续执行，否则需重新输入授权密钥。
+  程序启动后会自动检测当前网段是否被授权；若已授权则继续执行，否则需重新输入授权密钥。  
+  SecurityCheck_win7-win8.exe 或 SecurityCheck_win10-11.exe的配置文件ip_set_config.json不通用，前者的ipList是10.136.72.0/255.255.255.0\，后者则是172.16.1.0/26\
 
 ---
 
@@ -124,7 +119,7 @@
 
 ## 📄 5. 检查结果说明
 
-检查结果将以 JSON 格式保存，主要内容包括：
+检查结果主要内容包括：
 
 - **Item**：检查项目名称  
 - **Issue**：检查发现的问题或状态  
@@ -207,15 +202,14 @@
 
 执行下列命令下载相关包：
 
-**(1) 下载 pip、setuptools、wheel 及 openpyxl 相关包：**
+**(1) 下载 pip、setuptools、wheel：**
 ```bash
 pip download pip setuptools wheel -d ./offline_pip --no-binary :all:
-pip download openpyxl et_xmlfile jdcal -d ./offline_pip
 ```
 
-**(2) 下载 pandas、chardet 及其所有依赖：**
+**(2) 下载 openpyxl et_xmlfile jdcal pandas chardet numpy python-dateutil pytz：**
 ```bash
-pip download pandas chardet numpy python-dateutil pytz -d ./packages
+pip download openpyxl et_xmlfile jdcal pandas chardet numpy python-dateutil pytz -d ./packages
 ```
 
 ### 3. 离线环境安装步骤
@@ -230,7 +224,7 @@ pip download pandas chardet numpy python-dateutil pytz -d ./packages
    ```bash
    python -m pip install --no-index --find-links=./offline_pip pip
    ```
-3. **离线安装 openpyxl 等依赖：**
+3. **离线安装 openpyxl 等包依赖：**
    ```bash
    pip install --no-index --find-links=./packages openpyxl et_xmlfile jdcal pandas chardet numpy python-dateutil pytz
    ```
