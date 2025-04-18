@@ -21,7 +21,7 @@ set "_inf=%temp%\pass_policy.inf"
     echo [System Access]
     echo MinimumPasswordLength = 8
     echo PasswordComplexity = 1
-    echo PasswordHistorySize = 1
+    echo PasswordHistorySize = 3
     echo MaximumPasswordAge = 90
     echo MinimumPasswordAge = 1
     echo [Version]

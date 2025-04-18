@@ -1,0 +1,4 @@
+       wmic useraccount where "name='Administrator'" set PasswordExpires=True
+       net accounts /maxpwage:90
+       net accounts /minpwlen:8
+       net accounts /uniquepw:3

@@ -18,9 +18,12 @@ class LogHandler(BaseHTTPRequestHandler):
         if self.path == "/" or self.path == "/index.html":
             self.serve_file("index.html", "text/html")
         # 返回 Security Check 工具下载文件
-        elif self.path == "/win7-11":
+        elif self.path == "/SecurityCheck_v5":
             # 默认返回 SecurityCheck_v5.exe、config.json、ip_set_config.json, 依赖dotnet与msu补丁
             self.serve_file('SecurityCheck_v5.zip', 'application/zip', as_attachment=True)
+        elif self.path == "/msu":
+            # 默认返回 SecurityCheck_v5.exe、config.json、ip_set_config.json, 依赖dotnet与msu补丁
+            self.serve_file('msu.zip', 'application/zip', as_attachment=True)
         # 返回管理员使用说明页面 readme.html
         elif self.path == "/readme":
             self.serve_file("README.html", "text/html")
