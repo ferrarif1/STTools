@@ -1,5 +1,5 @@
 {
-    "scriptPath": "SecurityCheck_v5.exe",
+    "scriptPath": "check5_win7-8.exe",
     "uploadUrl": "http://10.136.5.152:8000/log",
     "failCache": "check_fail.json"
 } 

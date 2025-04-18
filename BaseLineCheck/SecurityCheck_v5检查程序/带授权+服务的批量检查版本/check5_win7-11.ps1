@@ -595,21 +595,12 @@ try {
     # 1. 检查是否开启或使用FTP传输功能
     Write-Host "`n【1】FTP服务与传输功能检查："
     try {
+        # 检查 FTP 服务状态
         $ftpService = Get-Service -Name FTPSVC -ErrorAction SilentlyContinue
-    
-        $ftpClientInstalled = Get-Command "ftp.exe" -ErrorAction SilentlyContinue
-        if ($ftpClientInstalled) {
-            Write-ErrorMsg "FTP客户端功能已启用。"
-            Write-Instruction "建议在'控制面板'>'启用或关闭Windows功能'中禁用 FTP 客户端。"
-            $Results += @{
-                Item       = "FTP服务"
-                Issue      = "FTP 服务已安装，状态为 $($ftpService.Status)"
-            }
-        } else {
-            Write-Success "FTP 客户端未启用。"
-        }
-    
+
+        # 检查 FTP 端口是否被监听
         $netstat = netstat -an | Select-String ":21\s+"
+
         if ($netstat) {
             Write-ErrorMsg "检测到 FTP 端口 (21) 被监听。"
             Write-Instruction "请停止使用 FTP 的相关服务或软件。"
@@ -620,17 +611,38 @@ try {
         } else {
             Write-Success "端口 21 未被监听。"
         }
-    
+
         if ($ftpService) {
             Write-ErrorMsg "检测到 FTP 服务已安装，状态: $($ftpService.Status)"
             Write-Instruction "建议禁用 FTP 服务（在服务管理器中设置为禁用）。"
             $Results += @{
                 Item       = "FTP服务"
-                Issue      = "检测到 FTP 服务已安装"
+                Issue      = "检测到 FTP 服务已安装，状态: $($ftpService.Status)"
             }
         } else {
             Write-Success "系统未安装 FTP 服务。"
         }
+
+       
+        # 检查注册表中的 FTP 服务状态
+        $ftpRegPath = "HKLM:\SYSTEM\CurrentControlSet\Services\FTPSVC"
+        if (Test-Path $ftpRegPath) {
+            $ftpServiceStatus = Get-ItemProperty -Path $ftpRegPath -Name "Start" -ErrorAction SilentlyContinue
+            if ($ftpServiceStatus.Start -eq 2) {
+                Write-ErrorMsg "FTP 服务已设置为自动启动。"
+                $Results += @{
+                    Item       = "FTP服务注册表"
+                    Issue      = "FTP 服务已设置为自动启动。"
+                }
+            } elseif ($ftpServiceStatus.Start -eq 3) {
+                Write-Success "FTP 服务已设置为手动启动。"
+            } else {
+                Write-Success "FTP 服务未设置为启动。"
+            }
+        } else {
+            Write-Host "未找到 FTP 服务的注册表项。"
+        }
+
     } catch {
         Write-ErrorMsg "检测 FTP 状态时出错：$_"
         $Results += @{
@@ -638,7 +650,6 @@ try {
             Issue      = "检查过程中发生错误: $_"
         }
     }
-  
     Write-Seperator
 
     # 2. 网卡信息及无线网卡状态检查
@@ -693,7 +704,7 @@ try {
     $outboundRuleBlocks = $outboundRulesText -split "(\r?\n){2,}"
 
     # 辅助函数：判断单个规则块中是否存在对指定端口的阻止规则  
-    # 采用正则表达式提取“LocalPorts/RemotePorts/Port”后面的端口列表（支持逗号、分号或空格分隔）
+    # 采用正则表达式提取"LocalPorts/RemotePorts/Port"后面的端口列表（支持逗号、分号或空格分隔）
     # 并检查该规则块中是否同时含有阻止动作（Action: Block、操作: 阻止 或 Deny）
     function IsPortBlockedInRule {
         param(
@@ -761,7 +772,8 @@ try {
             Write-Success "IPv6 已禁用。"
         } else {
             Write-ErrorMsg "IPv6 未完全禁用。"
-            Write-Instruction "建议设置注册表 DisabledComponents=255 完全禁用 IPv6。"
+            Write-Instruction "建议设置注册表 DisabledComponents=255 完全禁用 IPv6，通过PowerShell以管理员权限执行: "
+            Write-Host 'Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip6\Parameters" -Name "DisabledComponents" -Value 255 -Type DWord'
             $Results += @{
                 Item       = "IPv6"
                 Issue      = "IPv6 未完全禁用 (DisabledComponents = $ipv6Value)"
@@ -800,7 +812,7 @@ try {
         $netAccOutput = net accounts
         Write-Host "【net accounts】输出如下："
         $netAccOutput -split "`n" | ForEach-Object { Write-Host $_.Trim() }
-        Write-Instruction "请进入【本地安全策略】或【组策略编辑器】，调整密码策略，将最长密码有效期设置为不超过 90 天。"
+        Write-Instruction "查看以上输出的Maximum password age (days)值，若大于90，则不符合要求，需设置为90天。"
         $Results += @{
             Item       = "密码策略"
             Issue      = "net accounts 输出: $netAccOutput"
@@ -844,15 +856,40 @@ try {
     # 8. 检查 U盘自动播放功能设置
     Write-Host "`n【8】U盘自动播放功能设置："
     try {
-        $regPathUSB = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\policies\Explorer"
-        $noDriveValue = (Get-ItemProperty -Path $regPathUSB -Name "NoDriveTypeAutoRun" -ErrorAction SilentlyContinue).NoDriveTypeAutoRun
-        if ($noDriveValue -eq 255) {
-            Write-Success "U盘自动播放已禁用。"
+        
+        # 检查注册表中的 NoDriveTypeAutoRun 值（优先看HKLM，其次HKCU）
+        function Get-AutoPlaySetting {
+            $regPaths = @(
+                "HKLM:\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer",
+                "HKCU:\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer"
+            )
+        
+            foreach ($path in $regPaths) {
+                if (Test-Path $path) {
+                    $value = Get-ItemProperty -Path $path -Name "NoDriveTypeAutoRun" -ErrorAction SilentlyContinue
+                    if ($value -ne $null) {
+                        return [int]$value.NoDriveTypeAutoRun
+                    }
+                }
+            }
+        
+            return $null
+        }
+        
+        # 判断 NoDriveTypeAutoRun 设置的值
+        $autoPlayValue = Get-AutoPlaySetting
+        
+        if ($autoPlayValue -eq $null) {
+            Write-Host "未找到 AutoPlay 策略配置，可能未设置。" -ForegroundColor Yellow
         } else {
-            Write-ErrorMsg "U盘自动播放未禁用 (当前值: $noDriveValue)。"
-            $Results += @{
-                Item       = "U盘自动播放"
-                Issue      = "未完全禁用 (NoDriveTypeAutoRun = $noDriveValue)"
+            $hexValue = "{0:X}" -f $autoPlayValue
+            Write-Host "当前 NoDriveTypeAutoRun 值为：$autoPlayValue (Hex: 0x$hexValue)"
+        
+            # 判断是否禁用U盘自动播放（移除驱动器：0x04）
+            if (($autoPlayValue -band 0x04) -ne 0) {
+                Write-Success "已禁用可移动驱动器（U盘）的自动播放。" -ForegroundColor Green
+            } else {
+                Write-ErrorMsg "未禁用 U盘自动播放，建议修改为禁用。" -ForegroundColor Red
             }
         }
     } catch {
