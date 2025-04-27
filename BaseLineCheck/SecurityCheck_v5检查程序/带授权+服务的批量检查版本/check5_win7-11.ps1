@@ -458,16 +458,30 @@ try {
         Write-Host "当前网段 ($currentSubnet) 已授权，开始执行安全检查。" -ForegroundColor Green
     } else {
         # 如果未授权，提示输入授权密钥
-        $UserInputKey = Read-Host "请输入授权密钥"
-        Write-Host "你的输入：$UserInputKey"
-        
+        $UserInputKey = ""
+        Write-Host "请输入授权密钥: " -NoNewline
+        while ($true) {
+            $key = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+            if ($key.VirtualKeyCode -eq 13) { # Enter key
+                Write-Host ""
+                break
+            } elseif ($key.VirtualKeyCode -eq 8) { # Backspace key
+                if ($UserInputKey.Length -gt 0) {
+                    $UserInputKey = $UserInputKey.Substring(0, $UserInputKey.Length - 1)
+                    Write-Host "`b `b" -NoNewline
+                }
+            } else {
+                $UserInputKey += $key.Character
+                Write-Host "*" -NoNewline
+            }
+        }
+
+        Write-Host "正在验证授权密钥..."
+
         # 计算输入密码的哈希值
         $UserInputHash = [System.Security.Cryptography.SHA256]::Create().ComputeHash([System.Text.Encoding]::UTF8.GetBytes($UserInputKey))
         $UserInputHashString = [System.BitConverter]::ToString($UserInputHash).Replace("-", "").ToLower()
-        
-        Write-Host "你的密码哈希值：$UserInputHashString"
-        Write-Host "正确的哈希值：$PasswordHash"
-        
+
         # 比较哈希值
         if ($PasswordHash -eq $UserInputHashString) {
             Write-Host "授权成功，添加当前网段到授权列表。" -ForegroundColor Green

@@ -1,5 +1,5 @@
 ﻿{
-    "ipset":  "{\r\n    \"ipList\":  [\r\n                   {\r\n                       \"subnet\":  \"172.16.1.0/255.255.255.192\",\r\n                       \"addedDate\":  \"2025-04-27\",\r\n                       \"expiryDate\":  \"2026-04-27\"\r\n                   }\r\n               ]\r\n}",
-    "Timestamp":  "2025-04-27T08:38:53",
-    "Content":  "KdH+3Wm6ZIcGB7T/CT9bM86aXM2ZE29ZintWw+mmy2NYlMSQTbWmN4n4FXVYNOwt9SfPtwRbo+zZjcSfsJnlNDdua3mjNKzttziMhfG2Y/RrpNNLussbHqThv/pr8oY8B2etvCg09LHvLNT9J6JdaDMMsG5floSQccdc3juJzns0CyRwyI1GqGXzTzEf5Ywl0fhUIm0a6iWpeFcNUyCUD8PMl90v/9g7sUQzsSTQtaa+Pym398ZthmesnRjCzUGl61NlujXlmF9uUzDhhyq+BNwUiarpRWaJA41P4Y7TkLfmvXQz+ptQNtMfO8mmN7G4bktCJ7EPTZFjg5BSvXQgoz50eTp9kQcgt4DNsSDn0UM="
+    "ipset":  "{\r\n    \"ipList\":  [\r\n\r\n               ]\r\n}",
+    "Timestamp":  "2025-04-27T13:29:31",
+    "Content":  "/w6qRQHlYaG52KR6hIwHaPF+dKT4vTGDXXPYKA9XVtn35AniyGxJeiFUdZuQMNGhzHzsrrtH0qTiMLPJCSvHcA=="
 }
