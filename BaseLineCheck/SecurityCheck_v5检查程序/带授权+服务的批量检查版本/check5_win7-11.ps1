@@ -52,7 +52,6 @@ function Check-WifiStatus {
 }
 
 # === 主程序逻辑 ===
-Write-Host "开始获取当前 IP 地址..." -ForegroundColor Green
 
 $currentIP = Get-CurrentIPAddress
 if ($currentIP) {
@@ -61,10 +60,6 @@ if ($currentIP) {
     Write-Host "无法获取当前 IP 地址。" -ForegroundColor Red
 }
 
-# 检查无线网卡状态
-Check-WifiStatus
-
-Write-Host "脚本执行完毕。" -ForegroundColor Green
 
 # 将安全字符串转换为明文的函数 - 置于顶层
 function Convert-SecureStringToPlainText {
@@ -446,6 +441,9 @@ function Add-AuthorizedIP {
     }
 }
 
+# 存储正确的密码哈希值
+$PasswordHash = "c1d243817f27fe6aa2811fd98e2f090e9eff9cf42e08ca5de5b430a5cf1ee8f3"
+
 # 为关键函数添加错误处理
 try {
     # 获取当前网段信息
@@ -461,9 +459,17 @@ try {
     } else {
         # 如果未授权，提示输入授权密钥
         $UserInputKey = Read-Host "请输入授权密钥"
-        $AuthKeyPlainText = Convert-SecureStringToPlainText -SecureString $AuthorizedKey
+        Write-Host "你的输入：$UserInputKey"
         
-        if ($AuthKeyPlainText -eq $UserInputKey) {
+        # 计算输入密码的哈希值
+        $UserInputHash = [System.Security.Cryptography.SHA256]::Create().ComputeHash([System.Text.Encoding]::UTF8.GetBytes($UserInputKey))
+        $UserInputHashString = [System.BitConverter]::ToString($UserInputHash).Replace("-", "").ToLower()
+        
+        Write-Host "你的密码哈希值：$UserInputHashString"
+        Write-Host "正确的哈希值：$PasswordHash"
+        
+        # 比较哈希值
+        if ($PasswordHash -eq $UserInputHashString) {
             Write-Host "授权成功，添加当前网段到授权列表。" -ForegroundColor Green
             Add-AuthorizedIP -newSubnet $currentSubnet
         } else {
