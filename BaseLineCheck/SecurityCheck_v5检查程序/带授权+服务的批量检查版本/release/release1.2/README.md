@@ -6,19 +6,19 @@
 
 ### 1.1 下载检查工具压缩包
 
+访问以下地址下载压缩包：  
+```
+http://<server_ip>:8000/SecurityCheck_v5
+```  
+压缩包内容包括：  
+- **SecurityCheck_v5.exe**  
+- **config.json**  
+- **ip_set_config.json**
 
-  访问以下地址下载压缩包：  
-  ```
-  http://<server_ip>:8000/win7-11
-  ```  
-  压缩包内容包括：  
-  - **SecurityCheck_v5.exe**  
-  - **config.json**  
-  - **ip_set_config.json**（由程序自动生成）  
-
- **Windows 7/8 用户**  
-  - 依赖补丁：  
-    - .NET Framework 安装包（dotNetFx35）一般系统已自带，如果没有，需要先安装dotNetFx35，再安装下面补丁之一，双击即可  
+**Windows 7/8 用户**  
+- 依赖补丁：
+  - .NET Framework 安装包（dotNetFx35）一般系统已自带，如果没有，需要先安装dotNetFx35
+  - 访问 `http://<server_ip>:8000/msu` 下载对应系统的补丁包：
     - Windows 7 补丁（Win7AndW2K8R2-KB3191566-x64.msu）
     - Windows 8 补丁（Win8.1AndW2K12R2-KB3191564-x64.msu）
 
@@ -57,7 +57,7 @@
 ## 📄 2. 授权所在网段
 
 - 启动 **SecurityCheck_v5.exe** 进行安全基线检查。
-- **首次授权：**  
+- **首次使用需授权：**  
   程序将提示您输入授权密钥，并自动检测当前以太网适配器所在的网段。检测到的网段会保存至加密文件 **ip_set_config.json** 中，仅允许授权网段继续安全检查，可同时授权多个网段。  
   示例配置如下：
 
@@ -81,13 +81,12 @@
   ```
 
 
-
 ---
 
 ## 📚 3. 文件结构说明
 
 - **SecurityCheck_v5.exe** – 主程序（根据版本分别为 SecurityCheck_v5.exe 或 SecurityCheck_v5.exe）
-- **ip_set_config.json** – 存储已授权网段的加密配置文件（程序自动生成）
+- **ip_set_config.json** – 存储已授权网段的加密配置文件（程序自动生成，如需重新授权直接删除此文件）
 - **config.json** – 配置文件（包含脚本路径、上传 URL 等配置）
 
 ---
@@ -136,7 +135,7 @@
   在同一网段内部署一台 PC 作为服务端，建议使用 Windows 10 或更高版本（其它系统亦可，但请确保已安装相应的 Python 环境）。
 
 - **Python 环境配置**：  
-  请确认已安装 Python（建议 Python 3.11）及所需依赖包（如 pandas、chardet 等），具体参见后续“安装依赖”部分。
+  请确认已安装 Python（建议 Python 3.11）及所需依赖包（如 pandas、chardet 等），具体参见后续"安装依赖"部分。
 
 ### 6.2 启动服务端
 
@@ -147,6 +146,15 @@
    ```
 3. 服务端启动后，将监听 8000 端口并自动创建 `Monitor` 目录。  
    当客户端上传日志数据时，会以客户端 IP 为文件名保存日志（例如：`192.168.1.5.txt`），所有数据合并写入 `Monitor\summary.xlsx` 以便统计与分析。
+
+### 6.3 服务端功能说明
+
+服务端提供以下 HTTP 接口：
+- `http://<server_ip>:8000/` - 主页面，提供工具下载入口
+- `http://<server_ip>:8000/SecurityCheck_v5` - 下载检查工具压缩包
+- `http://<server_ip>:8000/msu` - 下载 Windows 7/8 系统补丁包
+- `http://<server_ip>:8000/readme` - 管理员使用说明页面
+- `http://<server_ip>:8000/log` - 接收客户端上传的检查日志（POST 请求）
 
 ---
 
