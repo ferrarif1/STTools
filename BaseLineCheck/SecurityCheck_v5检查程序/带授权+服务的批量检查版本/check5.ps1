@@ -446,6 +446,46 @@ function Add-AuthorizedIP {
     }
 }
 
+# 加密函数
+function Encrypt-Password {
+    param([string]$Password)
+    try {
+        # 获取加密密钥的明文
+        $keyPlainText = Convert-SecureStringToPlainText -SecureString $EncryptionKey
+        $keyBytes = [System.Text.Encoding]::UTF8.GetBytes($keyPlainText)
+
+        # 创建随机IV
+        $iv = New-Object byte[] 16
+        $rng = New-Object System.Security.Cryptography.RNGCryptoServiceProvider
+        $rng.GetBytes($iv)
+
+        # 使用AES加密
+        $aes = [System.Security.Cryptography.Aes]::Create()
+        $aes.Key = $keyBytes[0..31] # 使用前32字节作为密钥
+        $aes.IV = $iv
+        $aes.Mode = [System.Security.Cryptography.CipherMode]::CBC
+        $aes.Padding = [System.Security.Cryptography.PaddingMode]::PKCS7
+
+        # 加密内容
+        $contentBytes = [System.Text.Encoding]::UTF8.GetBytes($Password)
+        $encryptor = $aes.CreateEncryptor()
+        $encryptedBytes = $encryptor.TransformFinalBlock($contentBytes, 0, $contentBytes.Length)
+
+        # 组合IV和加密后的内容
+        $combinedBytes = $iv + $encryptedBytes
+        return [Convert]::ToBase64String($combinedBytes)
+    } catch {
+        Write-Host "加密失败: $_" -ForegroundColor Red
+        throw
+    } finally {
+        if ($aes) { $aes.Dispose() }
+        if ($rng) { $rng.Dispose() }
+    }
+}
+
+# 存储加密的授权密钥
+$PasswordEnc = Encrypt-Password "Hzdsz#4869"
+
 # 为关键函数添加错误处理
 try {
     # 获取当前网段信息
@@ -461,9 +501,10 @@ try {
     } else {
         # 如果未授权，提示输入授权密钥
         $UserInputKey = Read-Host "请输入授权密钥"
-        $AuthKeyPlainText = Convert-SecureStringToPlainText -SecureString $AuthorizedKey
-        
-        if ($AuthKeyPlainText -eq $UserInputKey) {
+        $EncryptedUserInput = Encrypt-Password $UserInputKey
+        Write-Host "你的密码加密结果：$EncryptedUserInput 正确的结果：$PasswordEnc"
+        # 比较加密结果
+        if ($PasswordEnc -eq $EncryptedUserInput) {
             Write-Host "授权成功，添加当前网段到授权列表。" -ForegroundColor Green
             Add-AuthorizedIP -newSubnet $currentSubnet
         } else {
