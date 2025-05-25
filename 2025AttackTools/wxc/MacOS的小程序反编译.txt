@@ -1,0 +1,18 @@
+WeChat小程序反编译
+
+不需要解密,直接解包
+
+
+
+解包主包
+./bingo.sh <主包文件路径>
+
+示例:
+./bingo.sh /Users/whoami/Desktop/WxAPP/30/__APP__.wxapkg
+
+
+解包子包
+./bingo.sh <子包路径> -s=<子包解包后生成的文件夹>
+示例:
+./bingo.sh /Users/whoami/Desktop/WxAPP/30/_pages_guide_.wxapkg -s=/Users/whoami/Desktop/WxAPP/30/__pages_guide_
+
