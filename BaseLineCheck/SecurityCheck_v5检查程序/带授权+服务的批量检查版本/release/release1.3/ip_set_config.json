@@ -1,0 +1,5 @@
+﻿{
+    "ipset":  "{\r\n    \"ipList\":  [\r\n                   {\r\n                       \"subnet\":  \"0.0.0.0/0\",\r\n                       \"addedDate\":  \"2025-05-28\",\r\n                       \"expiryDate\":  \"2025-07-27\"\r\n                   }\r\n               ]\r\n}",
+    "Timestamp":  "2025-05-28T15:48:36",
+    "Content":  "BtVg3ddwA2ZfoJ1VS3/XXm6en6LBcfTJsiGwSWwKpCO6hD/qMRhssSOiCYccVAy+NrK7N1kqkVky9dOdmQSBOb8K4bSh4wfSq7Jb4lRu04bqEIQtw1JiksAIxyvggNPfSjNJM9bvKdZZ2b6/uYh2hQ2QwXA+uv18eWBfzjkNv1NK/N8v1iGFHO4AlcXcEMqUKSjyaZyA/O1sf6OIA1Yt3zu3/8tMcKFE2wiFoXxM5c2OncVU+EQykCDvBQkkLv5Ty4O2yscssKDKNpi1jSHTROob5vgvAhpbuWuO/Mm+GldsE9HeAGZ4IqCQjQ0TOgCupPApY+agLfIKQkGHYNcYzw=="
+}
