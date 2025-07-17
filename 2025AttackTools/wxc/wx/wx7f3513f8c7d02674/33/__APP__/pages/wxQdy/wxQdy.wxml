@@ -1,0 +1,4 @@
+<view class="center">
+    <image alt srcset class="img" src="https://www.hfi-health.com:28181/appsImg/miniLogo.png"></image>
+    <view class="_div">杭州市互联网医院</view>
+</view>

@@ -1,0 +1,27 @@
+.mes_con {
+    align-items: center;
+    background-color: #fff;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 95vh;
+    padding-bottom: 5vh;
+}
+
+.message1 {
+    height: 74px;
+    margin-top: 5vh;
+    width: 292px;
+}
+
+.message2 {
+    height: 297px;
+    margin-top: 10vh;
+    width: 375px;
+}
+
+.message3 {
+    height: 53px;
+    margin-top: 10vh;
+    width: 297px;
+}

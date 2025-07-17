@@ -1,0 +1,32 @@
+<view class="container">
+    <view class="userInfo">
+        <view class="item">
+            <view class="title">真实姓名</view>
+            <input bindinput="__e" data-event-opts="{{[ [ 'input',[ [ '__set_model',[ '','name','$event',[] ] ] ] ] ]}}" placeholder="请输入姓名" placeholderClass="placeholder" type="text" value="{{name}}"></input>
+        </view>
+        <view class="item">
+            <view class="title">手机号</view>
+            <input bindinput="__e" data-event-opts="{{[ [ 'input',[ [ '__set_model',[ '','phone','$event',[] ] ] ] ] ]}}" placeholder="请输入手机号" placeholderClass="placeholder" type="text" value="{{phone}}"></input>
+        </view>
+        <view class="item">
+            <view class="title">证件类型</view>
+            <picker bindchange="__e" data-event-opts="{{[ [ 'change',[ [ 'paperTypeChange',['$event'] ] ] ] ]}}" range="{{paperTypeLabels}}" value="{{paperTypeIdx}}">
+                <view class="placeholder">{{paperTypeLabels[paperTypeIdx]}}</view>
+            </picker>
+        </view>
+        <view class="item">
+            <view class="title">证件号码</view>
+            <input bindinput="__e" data-event-opts="{{[ [ 'input',[ [ '__set_model',[ '','paperNo','$event',[] ] ] ] ] ]}}" placeholder="请输入证件号码" placeholderClass="placeholder" type="{{paperTypeIdx===0?'idcard':''}}" value="{{paperNo}}"></input>
+        </view>
+        <view class="item">
+            <view class="title">短信验证码</view>
+            <input bindinput="__e" data-event-opts="{{[ [ 'input',[ [ '__set_model',[ '','yzm','$event',[] ] ] ] ] ]}}" placeholder="请输入短信验证码" style="text-align:left;width:280rpx;" value="{{yzm}}"></input>
+            <button bindtap="__e" class="msgBtn" data-event-opts="{{[ [ 'tap',[ [ 'sendSms',['$event'] ] ] ] ]}}" disabled="{{countdown>0}}" size="mini" type="primary">{{countdown<=0?msgName:countdown+'s'}}</button>
+        </view>
+    </view>
+    <view class="tips">
+        <view>温馨提示：</view>
+        <view>请提交本人真实身份信息，否则功能将无法正常使用</view>
+    </view>
+    <view bindtap="__e" class="{{['confirm',!(name&&phone&&paperNo&&yzm)?'opacity':'']}}" data-event-opts="{{[ [ 'tap',[ [ 'confirm',['$event'] ] ] ] ]}}">确认</view>
+</view>

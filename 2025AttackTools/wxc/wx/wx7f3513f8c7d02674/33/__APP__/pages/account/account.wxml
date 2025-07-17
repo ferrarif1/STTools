@@ -1,0 +1,15 @@
+<view class="container">
+    <view class="tips">系统检测出您当前手机号存在多个身份账户，请选择其中一个作为永久登录账户</view>
+    <view bindtap="__e" class="userInfo" data-event-opts="{{[ [ 'tap',[ [ 'getcheckno',['$0'],[ [ ['accountList','',index] ] ] ] ] ] ]}}" wx:for="{{$root.l0}}">
+        <view class="item">
+            <view class="title">{{item.m0}}</view>
+            <view class="title _div">{{item.m1}}</view>
+        </view>
+        <view class="arrow-right"></view>
+    </view>
+    <view class="titlenew">以上均不是我的身份账户</view>
+    <view bindtap="__e" class="confirm" data-event-opts="{{[ [ 'tap',[ [ 'confirmnew',['$event'] ] ] ] ]}}">直接登录/重新实名认证</view>
+    <uni-popup bind:__l="__l" class="vue-ref" data-ref="alertDialog" type="dialog" vueId="c3f6e438-1" vueSlots="{{['default']}}">
+        <uni-popup-dialog bind:__l="__l" bind:close="__e" bind:confirm="__e" cancelText="关闭" confirmText="确定" content="是否确定直接登录？" data-event-opts="{{[ [ '^confirm',[ ['dialogConfirm'] ] ],[ '^close',[ ['dialogClose'] ] ] ]}}" title="提示" type="info" vueId="{{'c3f6e438-2'+','+'c3f6e438-1'}}"></uni-popup-dialog>
+    </uni-popup>
+</view>

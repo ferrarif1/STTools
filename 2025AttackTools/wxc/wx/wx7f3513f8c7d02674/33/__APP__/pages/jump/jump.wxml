@@ -1,0 +1,6 @@
+<view style="background-color:rgb(215,241,237);min-height:100vh;">
+    <view class="top"></view>
+    <view class="mid">
+        <view bindtap="__e" class="btn" data-event-opts="{{[ [ 'tap',[ [ 'goto',['$event'] ] ] ] ]}}"></view>
+    </view>
+</view>

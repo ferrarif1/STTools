@@ -1,0 +1,145 @@
+.checkPaperNO {
+    overflow: auto;
+}
+
+.title {
+    color: #333;
+    font-size: 25px;
+    font-weight: 600;
+    margin-top: 40px;
+}
+
+.tips,.title {
+    text-indent: 30px;
+}
+
+.tips {
+    color: #999;
+    font-size: 14px;
+    margin-top: 15px;
+}
+
+.tips text {
+    color: #3ebfa0;
+}
+
+.input_content {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 45px;
+    padding: 0 56px;
+}
+
+.input_item {
+    border-bottom: 1px solid #3ebfa0;
+    font-size: 25px;
+    font-weight: 600;
+    height: 40px;
+    width: 40px;
+}
+
+.input_item input {
+    height: 100%;
+    text-align: center;
+    width: 100%;
+}
+
+.confirm {
+    background: #3ebfa0;
+    border-radius: 99999px;
+    color: #fff;
+    font-size: 17px;
+    height: 45px;
+    line-height: 45px;
+    margin: 60px auto 0;
+    text-align: center;
+    width: 315px;
+}
+
+.clearBtn {
+    color: #999;
+    font-size: 12px;
+    margin: 20px auto 0;
+    text-align: center;
+}
+
+.opacity {
+    opacity: .5;
+}
+
+.input {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 45px;
+    padding: 0 56px;
+    position: relative;
+}
+
+.input-item {
+    border-bottom: 2rpx solid #3ebfa0;
+    display: inline-block;
+    height: 90rpx;
+    position: relative;
+    width: 90rpx;
+}
+
+.input-item:not(:first-child) {
+    margin-left: 26.67rpx;
+}
+
+.input-value {
+    display: inline-block;
+    font-size: 58rpx;
+    left: 50%;
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%,-50%);
+}
+
+.input-password {
+    height: 90rpx;
+    left: -160rpx;
+    opacity: 0;
+    position: absolute;
+    top: 0;
+    width: 880rpx;
+}
+
+.focus {
+    background-color: #333;
+    height: 50rpx;
+    left: 50%;
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%,-50%);
+    width: 2rpx;
+}
+
+.show {
+    animation: blink 1s linear infinite;
+    display: block;
+}
+
+.hide {
+    display: none;
+}
+
+@-webkit-keyframes blink {
+    0%,50% {
+        opacity: 1;
+    }
+
+    50.01%,to {
+        opacity: 0;
+    }
+}
+
+@keyframes blink {
+    0%,50% {
+        opacity: 1;
+    }
+
+    50.01%,to {
+        opacity: 0;
+    }
+}

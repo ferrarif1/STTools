@@ -1,0 +1,5 @@
+<view class="pay-transfer">
+    <image class="logo" src="../../static/img_logo.png.png"></image>
+    <view class="greet">市民卡支付唤起中...</view>
+    <image class="loading" src="../../static/loading.gif"></image>
+</view>

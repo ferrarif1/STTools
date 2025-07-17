@@ -1,0 +1,3 @@
+<view class="container">
+    <web-view bindload="__e" bindmessage="__e" data-event-opts="{{[ [ 'message',[ [ 'onmessage',['$event'] ] ] ],[ 'load',[ [ 'onloaded',['$event'] ] ] ] ]}}" id="web-view-1" src="{{indexUrl}}"></web-view>
+</view>

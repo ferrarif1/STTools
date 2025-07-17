@@ -1,0 +1,54 @@
+<view class="pageBox data-v-c17481f4">
+    <view class="head data-v-c17481f4">
+        <image class="bg data-v-c17481f4" src="https://cdnweb11.96225.com/inthis_pro/20241029/3ce4477040884491877a766309803dc3/2389i23478934781730171322537.jpg"></image>
+        <view class="content data-v-c17481f4">
+            <view bindtap="__e" class="title data-v-c17481f4" data-event-opts="{{[ [ 'tap',[ [ 'toUrl',[9] ] ] ] ]}}">慢病管理</view>
+            <view class="manage data-v-c17481f4">
+                <image mode bindtap="__e" class="data-v-c17481f4" data-event-opts="{{[ [ 'tap',[ [ 'toUrl',[1] ] ] ] ]}}" src="https://cdnweb11.96225.com/inthis_pro/20241029/d4fa6179cb204686bc191cac72c84ecd/2389i23478934781730171292620.jpg"></image>
+                <image mode bindtap="__e" class="data-v-c17481f4" data-event-opts="{{[ [ 'tap',[ [ 'toUrl',[2] ] ] ] ]}}" src="https://cdnweb11.96225.com/inthis_pro/20241029/0537b992cc684e1186d2d97bc918078d/2389i23478934781730171338278.jpg"></image>
+                <image mode bindtap="__e" class="data-v-c17481f4" data-event-opts="{{[ [ 'tap',[ [ 'toUrl',[3] ] ] ] ]}}" src="https://cdnweb11.96225.com/inthis_pro/20241029/5ae7adef92fe422e8a47636b3b61fa0c/2389i23478934781730171352807.jpg"></image>
+                <image mode bindtap="__e" class="data-v-c17481f4" data-event-opts="{{[ [ 'tap',[ [ 'toUrl',[4] ] ] ] ]}}" src="https://cdnweb11.96225.com/inthis_pro/20241029/ce15971a90eb4dacb140f3cac7711b61/2389i23478934781730171370555.jpg"></image>
+            </view>
+        </view>
+    </view>
+    <view class="box data-v-c17481f4">
+        <view class="section data-v-c17481f4">
+            <view class="title data-v-c17481f4">上门服务</view>
+            <view class="serve data-v-c17481f4">
+                <view bindtap="__e" class="li data-v-c17481f4" data-event-opts="{{[ [ 'tap',[ [ 'toUrl',[5] ] ] ] ]}}">
+                    <image mode class="data-v-c17481f4" src="../../static/p9.png"></image>
+                    <view class="data-v-c17481f4">慢病护理</view>
+                </view>
+                <view bindtap="__e" class="li data-v-c17481f4" data-event-opts="{{[ [ 'tap',[ [ 'toUrl',[6] ] ] ] ]}}">
+                    <image mode class="data-v-c17481f4" src="../../static/p10.png"></image>
+                    <view class="data-v-c17481f4">慢病康复</view>
+                </view>
+                <view bindtap="__e" class="li data-v-c17481f4" data-event-opts="{{[ [ 'tap',[ [ 'toUrl',[7] ] ] ] ]}}">
+                    <image mode class="data-v-c17481f4" src="../../static/p11.png"></image>
+                    <view class="data-v-c17481f4">慢病检查</view>
+                </view>
+                <view bindtap="__e" class="li data-v-c17481f4" data-event-opts="{{[ [ 'tap',[ [ 'toUrl',[8] ] ] ] ]}}">
+                    <image mode class="data-v-c17481f4" src="../../static/p12.png"></image>
+                    <view class="data-v-c17481f4">慢病建床</view>
+                </view>
+            </view>
+        </view>
+        <view class="section data-v-c17481f4">
+            <view class="title data-v-c17481f4">健康知识</view>
+            <view class="health data-v-c17481f4">
+                <view class="tabbar data-v-c17481f4">
+                    <view bindtap="__e" class="{{['data-v-c17481f4',activeItem==='推荐'?'active':'']}}" data-event-opts="{{[ [ 'tap',[ [ 'clickTab',['推荐'] ] ] ] ]}}">推荐</view>
+                    <view bindtap="__e" class="{{['data-v-c17481f4',activeItem==='高血压'?'active':'']}}" data-event-opts="{{[ [ 'tap',[ [ 'clickTab',['高血压'] ] ] ] ]}}">高血压</view>
+                    <view bindtap="__e" class="{{['data-v-c17481f4',activeItem==='糖尿病'?'active':'']}}" data-event-opts="{{[ [ 'tap',[ [ 'clickTab',['糖尿病'] ] ] ] ]}}">糖尿病</view>
+                </view>
+                <view bindtap="__e" class="li data-v-c17481f4" data-event-opts="{{[ [ 'tap',[ [ 'toArticle',['$0'],[ [ ['showList','',__i0__,'url'] ] ] ] ] ] ]}}" wx:for="{{showList}}" wx:for-index="__i0__">
+                    <view class="left data-v-c17481f4">
+                        <view class="data-v-c17481f4">{{item.title}}</view>
+                        <view class="data-v-c17481f4">{{item.orgin}}</view>
+                    </view>
+                    <image mode class="data-v-c17481f4" src="{{item.image}}"></image>
+                </view>
+            </view>
+        </view>
+    </view>
+</view>

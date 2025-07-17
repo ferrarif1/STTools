@@ -1,0 +1,20 @@
+.pay-transfer {
+    background-color: #fff;
+    color: #2ba728;
+    font-size: 36rpx;
+    line-height: 2;
+    min-height: 100vh;
+    padding-top: 250rpx;
+    text-align: center;
+}
+
+.pay-transfer .logo {
+    display: inline-block;
+    height: 234rpx;
+    width: 234rpx;
+}
+
+.pay-transfer .loading {
+    height: 160rpx;
+    width: 200rpx;
+}
