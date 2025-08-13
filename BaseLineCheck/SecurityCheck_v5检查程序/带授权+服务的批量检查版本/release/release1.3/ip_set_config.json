@@ -1,5 +1,5 @@
 ﻿{
-    "ipset":  "{\r\n    \"ipList\":  [\r\n                   {\r\n                       \"subnet\":  \"0.0.0.0/0\",\r\n                       \"addedDate\":  \"2025-05-28\",\r\n                       \"expiryDate\":  \"2025-07-27\"\r\n                   }\r\n               ]\r\n}",
-    "Timestamp":  "2025-05-28T15:48:36",
-    "Content":  "BtVg3ddwA2ZfoJ1VS3/XXm6en6LBcfTJsiGwSWwKpCO6hD/qMRhssSOiCYccVAy+NrK7N1kqkVky9dOdmQSBOb8K4bSh4wfSq7Jb4lRu04bqEIQtw1JiksAIxyvggNPfSjNJM9bvKdZZ2b6/uYh2hQ2QwXA+uv18eWBfzjkNv1NK/N8v1iGFHO4AlcXcEMqUKSjyaZyA/O1sf6OIA1Yt3zu3/8tMcKFE2wiFoXxM5c2OncVU+EQykCDvBQkkLv5Ty4O2yscssKDKNpi1jSHTROob5vgvAhpbuWuO/Mm+GldsE9HeAGZ4IqCQjQ0TOgCupPApY+agLfIKQkGHYNcYzw=="
+    "ipset":  "{\r\n    \"ipList\":  [\r\n                   {\r\n                       \"subnet\":  \"0.0.0.0/0\",\r\n                       \"addedDate\":  \"2025-05-28\",\r\n                       \"expiryDate\":  \"2025-10-12\"\r\n                   }\r\n               ]\r\n}",
+    "Timestamp":  "2025-08-13T09:18:22",
+    "Content":  "b9hRkHx5tT9NSY+n9JbSe5ujsE9igYQvwLRjaQX+jzAtbZerzccp7i7oLWXXyH1qhON+/7T0t/IvDRPbSvrDM9WTRH4P5/RK6lcioU5UeqrAFDRjxS8VdwqWV5qhr+sIgcm1A1VwR0YkBLkABHkzrMI99AzFQz5EnixS6G6+43/5MRMJDPwHz9+teL0EZkZkw/xQvY8ndlYzfESWPTZ7BvnaYCYAJ16Sc+Zz0Q2bkOQyC4jglZCYUAFXQ65rlc8+SHRdU47KO1kT/zIyi4bzWtNIkGh0XhfaEqrkhqTuACf7dsPLq1fBpenOTQBOc0GuxgkEk2HPMuRToJavG5LuuQ=="
 }
