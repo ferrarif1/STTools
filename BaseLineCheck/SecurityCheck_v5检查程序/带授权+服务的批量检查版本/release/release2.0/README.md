@@ -140,23 +140,9 @@ ps2exe .\SecurityCheck.ps1 .\SecurityCheck.exe -IconFile .\icon.ico
 # 无控制台窗口打包
 ps2exe .\SecurityCheck.ps1 .\SecurityCheck.exe -NoConsole
 
-# 管理员权限打包
-ps2exe .\SecurityCheck.ps1 .\SecurityCheck.exe -RequireAdmin
 ```
 
-## ⚠️ 注意事项
-
-### 文件分发
-
-**普通用户分发包**：
-- ✅ `SecurityCheck.exe`（或 `.ps1` 脚本）
-- ✅ `license.json`（已签发）
-- ✅ `config.json`（可选）
-
-**管理员专用**：
-- 🔒 `private_key.xml` - **严禁分发给普通用户**
-
-### 系统要求
+## 系统要求
 
 - **PowerShell** ≥ v3.0（Win7-win8 需安装补丁）
 - **Windows 系统** - Win7 / Win8 / Win10 / Win11
