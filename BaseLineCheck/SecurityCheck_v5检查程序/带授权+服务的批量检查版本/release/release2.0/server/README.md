@@ -43,7 +43,8 @@ server/
 ├── auto_restart_monitor.py               # 自动重启监控器
 ├── download_packages.py                  # 包下载脚本（有网络时使用）
 ├── install_dependencies.py               # 离线安装脚本
-├── start_server.bat                      # 一键启动脚本
+├── start_server.bat                      # 完整启动脚本（包含依赖检查）
+├── run.bat                               # 简单启动脚本
 ├── packages/                             # 离线包目录
 │   ├── requests-2.32.5-py3-none-any.whl
 │   ├── pandas-2.2.3-cp311-cp311-win_amd64.whl
@@ -92,7 +93,10 @@ python install_task_scheduler_simple.py install
 #### 3. 启动服务器
 
 ```bash
-# 一键启动（推荐）
+# 简单启动（推荐）
+run.bat
+
+# 完整启动（包含依赖检查）
 start_server.bat
 
 # 使用批处理脚本快速启动
