@@ -1,0 +1,11 @@
+﻿{
+    "Data":  {
+                 "IssuedAt":  "2025-08-21T09:23:33.9860808+08:00",
+                 "AllowedSubnets":  [
+                                        "0.0.0.0/0"
+                                    ],
+                 "Expire":  "2025-12-31",
+                 "Version":  "1"
+             },
+    "Signature":  "eLFLuOFsiBxe9pwzMJvnmiDxz6xwAjSQ+ltFTciPOfli9JOkT6guW+27jH0ut5FDHbyRjZnajDWyRJmFTrX6M2wmy2OgrCKALNedJ/XgL3Ea02gt3bxGGLSDKhAX82mX6QAFzRHngIYgGj2IC93jSJ8IeGEZcvH/f/UqgVJ4+egKclCHhHJigRWBpmlOMNFcumE78tbk1+poa2haJbx8RWegRCtZ1ovLok/un4UXIszS+7xtwE/39LQHZ1tejhRLB9WV8H4phuMqo2SoZXHniAaiyAjtQ8+AtHzOVJT0gyQxhPLUea+Wu1cRYaU50y029Bce6DbbUKPXwT8GNAJHvA=="
+}

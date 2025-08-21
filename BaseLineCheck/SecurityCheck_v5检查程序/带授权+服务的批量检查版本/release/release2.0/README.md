@@ -1,4 +1,4 @@
-# 🛡️ YourApp - 授权验证与基线检查工具
+# 🛡️ SecurityCheck - 授权验证与基线检查工具
 
 > 一款集成了授权验证与基线检查的自动化安全工具，支持RSA数字签名验证和结果自动上传
 
@@ -14,29 +14,29 @@
 
 ## 🎯 简介
 
-YourApp 是一款集成了**授权验证**与**基线检查**的自动化安全工具。
+SecurityCheck 是一款集成了**授权验证**与**基线检查**的自动化安全工具。
 
 ### ✨ 主要特性
 
 - 🖥️ **多系统支持** - 支持 Win7 / Win8 / Win10 / Win11（基于 WMI 获取网卡信息，兼容老系统）
-- 🔐 **安全授权** - 采用 RSA 数字签名验证授权文件，防止伪造和篡改
+- 🔐 **安全授权** - 采用 RSA 数字签名验证授权文件，防止伪造篡改
 - 🔄 **自动化执行** - 授权通过后，自动执行基线检查，并将结果上传至指定服务端
 - 📊 **结果管理** - 支持失败重试和结果缓存机制
 
 ## 📂 文件说明
 
-### 必需文件
+### 普通用户文件
 
 | 文件名 | 说明 | 分发对象 |
 |--------|------|----------|
-| `YourApp.ps1` / `YourApp.exe` | 主程序脚本或打包后的可执行文件 | 所有用户 |
+| `SecurityCheck.ps1` / `SecurityCheck.exe` | 主程序脚本或打包后的可执行文件 | 所有用户 |
 | `license.json` | 授权文件（由本工具生成），包含授权网段、到期日及签名 | 所有用户 |
+| `config.json` | 客户端配置文件 | 所有用户 |
 
-### 可选文件
+### 管理员文件
 
 | 文件名 | 说明 | 分发对象 |
 |--------|------|----------|
-| `config.json` | 客户端配置文件 | 所有用户 |
 | `private_key.xml` | 管理员专用的私钥文件，用于生成合法授权 | **仅管理员** ⚠️ |
 
 ### 配置文件示例
@@ -70,12 +70,12 @@ YourApp 是一款集成了**授权验证**与**基线检查**的自动化安全�
 
 **PowerShell 脚本方式**:
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\YourApp.ps1
+powershell -ExecutionPolicy Bypass -File .\SecurityCheck.ps1
 ```
 
 **EXE 可执行文件方式**:
 ```cmd
-.\YourApp.exe
+.\SecurityCheck.exe
 ```
 
 ### 3. 运行流程
@@ -128,20 +128,20 @@ powershell -ExecutionPolicy Bypass -File .\YourApp.ps1
 Install-Module -Name PS2EXE -Force
 
 # 打包脚本
-ps2exe .\YourApp.ps1 .\YourApp.exe
+ps2exe .\SecurityCheck.ps1 .\SecurityCheck.exe
 ```
 
 ### 打包选项
 
 ```powershell
 # 带图标打包
-ps2exe .\YourApp.ps1 .\YourApp.exe -IconFile .\icon.ico
+ps2exe .\SecurityCheck.ps1 .\SecurityCheck.exe -IconFile .\icon.ico
 
 # 无控制台窗口打包
-ps2exe .\YourApp.ps1 .\YourApp.exe -NoConsole
+ps2exe .\SecurityCheck.ps1 .\SecurityCheck.exe -NoConsole
 
 # 管理员权限打包
-ps2exe .\YourApp.ps1 .\YourApp.exe -RequireAdmin
+ps2exe .\SecurityCheck.ps1 .\SecurityCheck.exe -RequireAdmin
 ```
 
 ## ⚠️ 注意事项
@@ -149,7 +149,7 @@ ps2exe .\YourApp.ps1 .\YourApp.exe -RequireAdmin
 ### 文件分发
 
 **普通用户分发包**：
-- ✅ `YourApp.exe`（或 `.ps1` 脚本）
+- ✅ `SecurityCheck.exe`（或 `.ps1` 脚本）
 - ✅ `license.json`（已签发）
 - ✅ `config.json`（可选）
 
