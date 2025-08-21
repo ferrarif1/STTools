@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>README.md</title>
+<meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+
+<style>
+/* https://github.com/microsoft/vscode/blob/master/extensions/markdown-language-features/media/markdown.css */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+body {
+	font-family: var(--vscode-markdown-font-family, -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif);
+	font-size: var(--vscode-markdown-font-size, 14px);
+	padding: 0 26px;
+	line-height: var(--vscode-markdown-line-height, 22px);
+	word-wrap: break-word;
+}
+
+#code-csp-warning {
+	position: fixed;
+	top: 0;
+	right: 0;
+	color: white;
+	margin: 16px;
+	text-align: center;
+	font-size: 12px;
+	font-family: sans-serif;
+	background-color:#444444;
+	cursor: pointer;
+	padding: 6px;
+	box-shadow: 1px 1px 1px rgba(0,0,0,.25);
+}
+
+#code-csp-warning:hover {
+	text-decoration: none;
+	background-color:#007acc;
+	box-shadow: 2px 2px 2px rgba(0,0,0,.25);
+}
+
+body.scrollBeyondLastLine {
+	margin-bottom: calc(100vh - 22px);
+}
+
+body.showEditorSelection .code-line {
+	position: relative;
+}
+
+body.showEditorSelection .code-active-line:before,
+body.showEditorSelection .code-line:hover:before {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 0;
+	left: -12px;
+	height: 100%;
+}
+
+body.showEditorSelection li.code-active-line:before,
+body.showEditorSelection li.code-line:hover:before {
+	left: -30px;
+}
+
+.vscode-light.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.15);
+}
+
+.vscode-light.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.40);
+}
+
+.vscode-light.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-dark.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.4);
+}
+
+.vscode-dark.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.60);
+}
+
+.vscode-dark.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-high-contrast.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 160, 0, 0.7);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 160, 0, 1);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+img {
+	max-width: 100%;
+	max-height: 100%;
+}
+
+a {
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+	outline: 1px solid -webkit-focus-ring-color;
+	outline-offset: -1px;
+}
+
+hr {
+	border: 0;
+	height: 2px;
+	border-bottom: 2px solid;
+}
+
+h1 {
+	padding-bottom: 0.3em;
+	line-height: 1.2;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+}
+
+h1, h2, h3 {
+	font-weight: normal;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+table > thead > tr > th {
+	text-align: left;
+	border-bottom: 1px solid;
+}
+
+table > thead > tr > th,
+table > thead > tr > td,
+table > tbody > tr > th,
+table > tbody > tr > td {
+	padding: 5px 10px;
+}
+
+table > tbody > tr + tr > td {
+	border-top: 1px solid;
+}
+
+blockquote {
+	margin: 0 7px 0 5px;
+	padding: 0 16px 0 10px;
+	border-left-width: 5px;
+	border-left-style: solid;
+}
+
+code {
+	font-family: Menlo, Monaco, Consolas, "Droid Sans Mono", "Courier New", monospace, "Droid Sans Fallback";
+	font-size: 1em;
+	line-height: 1.357em;
+}
+
+body.wordWrap pre {
+	white-space: pre-wrap;
+}
+
+pre:not(.hljs),
+pre.hljs code > div {
+	padding: 16px;
+	border-radius: 3px;
+	overflow: auto;
+}
+
+pre code {
+	color: var(--vscode-editor-foreground);
+	tab-size: 4;
+}
+
+/** Theming */
+
+.vscode-light pre {
+	background-color: rgba(220, 220, 220, 0.4);
+}
+
+.vscode-dark pre {
+	background-color: rgba(10, 10, 10, 0.4);
+}
+
+.vscode-high-contrast pre {
+	background-color: rgb(0, 0, 0);
+}
+
+.vscode-high-contrast h1 {
+	border-color: rgb(0, 0, 0);
+}
+
+.vscode-light table > thead > tr > th {
+	border-color: rgba(0, 0, 0, 0.69);
+}
+
+.vscode-dark table > thead > tr > th {
+	border-color: rgba(255, 255, 255, 0.69);
+}
+
+.vscode-light h1,
+.vscode-light hr,
+.vscode-light table > tbody > tr + tr > td {
+	border-color: rgba(0, 0, 0, 0.18);
+}
+
+.vscode-dark h1,
+.vscode-dark hr,
+.vscode-dark table > tbody > tr + tr > td {
+	border-color: rgba(255, 255, 255, 0.18);
+}
+
+</style>
+
+<style>
+/* Tomorrow Theme */
+/* http://jmblog.github.com/color-themes-for-google-code-highlightjs */
+/* Original theme - https://github.com/chriskempson/tomorrow-theme */
+
+/* Tomorrow Comment */
+.hljs-comment,
+.hljs-quote {
+	color: #8e908c;
+}
+
+/* Tomorrow Red */
+.hljs-variable,
+.hljs-template-variable,
+.hljs-tag,
+.hljs-name,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-regexp,
+.hljs-deletion {
+	color: #c82829;
+}
+
+/* Tomorrow Orange */
+.hljs-number,
+.hljs-built_in,
+.hljs-builtin-name,
+.hljs-literal,
+.hljs-type,
+.hljs-params,
+.hljs-meta,
+.hljs-link {
+	color: #f5871f;
+}
+
+/* Tomorrow Yellow */
+.hljs-attribute {
+	color: #eab700;
+}
+
+/* Tomorrow Green */
+.hljs-string,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-addition {
+	color: #718c00;
+}
+
+/* Tomorrow Blue */
+.hljs-title,
+.hljs-section {
+	color: #4271ae;
+}
+
+/* Tomorrow Purple */
+.hljs-keyword,
+.hljs-selector-tag {
+	color: #8959a8;
+}
+
+.hljs {
+	display: block;
+	overflow-x: auto;
+	color: #4d4d4c;
+	padding: 0.5em;
+}
+
+.hljs-emphasis {
+	font-style: italic;
+}
+
+.hljs-strong {
+	font-weight: bold;
+}
+</style>
+
+<style>
+/*
+ * Markdown PDF CSS
+ */
+
+ body {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif, "Meiryo";
+	padding: 0 12px;
+}
+
+pre {
+	background-color: #f8f8f8;
+	border: 1px solid #cccccc;
+	border-radius: 3px;
+	overflow-x: auto;
+	white-space: pre-wrap;
+	overflow-wrap: break-word;
+}
+
+pre:not(.hljs) {
+	padding: 23px;
+	line-height: 19px;
+}
+
+blockquote {
+	background: rgba(127, 127, 127, 0.1);
+	border-color: rgba(0, 122, 204, 0.5);
+}
+
+.emoji {
+	height: 1.4em;
+}
+
+code {
+	font-size: 14px;
+	line-height: 19px;
+}
+
+/* for inline code */
+:not(pre):not(.hljs) > code {
+	color: #C9AE75; /* Change the old color so it seems less like an error */
+	font-size: inherit;
+}
+
+/* Page Break : use <div class="page"/> to insert page break
+-------------------------------------------------------- */
+.page {
+	page-break-after: always;
+}
+
+</style>
+
+<script src="https://unpkg.com/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast')
+          ? 'dark'
+          : 'default'
+    });
+  </script>
+<h1 id="%F0%9F%9B%A1%EF%B8%8F-securitycheck---%E6%8E%88%E6%9D%83%E9%AA%8C%E8%AF%81%E4%B8%8E%E5%9F%BA%E7%BA%BF%E6%A3%80%E6%9F%A5%E5%B7%A5%E5%85%B7">🛡️ SecurityCheck - 授权验证与基线检查工具</h1>
+<blockquote>
+<p>一款集成了授权验证与基线检查的自动化安全工具，支持RSA数字签名验证和结果自动上传</p>
+</blockquote>
+<h2 id="%F0%9F%93%8B-%E7%9B%AE%E5%BD%95">📋 目录</h2>
+<ul>
+<li><a href="#%E7%AE%80%E4%BB%8B">简介</a></li>
+<li><a href="#%E5%8A%9F%E8%83%BD%E7%89%B9%E6%80%A7">功能特性</a></li>
+<li><a href="#%E6%96%87%E4%BB%B6%E8%AF%B4%E6%98%8E">文件说明</a></li>
+<li><a href="#%E4%BD%BF%E7%94%A8%E6%96%B9%E6%B3%95">使用方法</a></li>
+<li><a href="#%E6%8E%88%E6%9D%83%E9%80%BB%E8%BE%91">授权逻辑</a></li>
+<li><a href="#%E6%89%93%E5%8C%85%E8%AF%B4%E6%98%8E">打包说明</a></li>
+<li><a href="#%E6%B3%A8%E6%84%8F%E4%BA%8B%E9%A1%B9">注意事项</a></li>
+</ul>
+<h2 id="%F0%9F%8E%AF-%E7%AE%80%E4%BB%8B">🎯 简介</h2>
+<p>SecurityCheck 是一款集成了<strong>授权验证</strong>与<strong>基线检查</strong>的自动化安全工具。</p>
+<h3 id="%E2%9C%A8-%E4%B8%BB%E8%A6%81%E7%89%B9%E6%80%A7">✨ 主要特性</h3>
+<ul>
+<li>🖥️ <strong>多系统支持</strong> - 支持 Win7 / Win8 / Win10 / Win11（基于 WMI 获取网卡信息，兼容老系统）</li>
+<li>🔐 <strong>安全授权</strong> - 采用 RSA 数字签名验证授权文件，防止伪造篡改</li>
+<li>🔄 <strong>自动化执行</strong> - 授权通过后，自动执行基线检查，并将结果上传至指定服务端</li>
+<li>📊 <strong>结果管理</strong> - 支持失败重试和结果缓存机制</li>
+</ul>
+<h2 id="%F0%9F%93%82-%E6%96%87%E4%BB%B6%E8%AF%B4%E6%98%8E">📂 文件说明</h2>
+<h3 id="%E6%99%AE%E9%80%9A%E7%94%A8%E6%88%B7%E6%96%87%E4%BB%B6">普通用户文件</h3>
+<table>
+<thead>
+<tr>
+<th>文件名</th>
+<th>说明</th>
+<th>分发对象</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SecurityCheck.ps1</code> / <code>SecurityCheck.exe</code></td>
+<td>主程序脚本或打包后的可执行文件</td>
+<td>所有用户</td>
+</tr>
+<tr>
+<td><code>license.json</code></td>
+<td>授权文件（由本工具生成），包含授权网段、到期日及签名</td>
+<td>所有用户</td>
+</tr>
+<tr>
+<td><code>config.json</code></td>
+<td>客户端配置文件</td>
+<td>所有用户</td>
+</tr>
+</tbody>
+</table>
+<h3 id="%E7%AE%A1%E7%90%86%E5%91%98%E6%96%87%E4%BB%B6">管理员文件</h3>
+<table>
+<thead>
+<tr>
+<th>文件名</th>
+<th>说明</th>
+<th>分发对象</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>private_key.xml</code></td>
+<td>管理员专用的私钥文件，用于生成合法授权</td>
+<td><strong>仅管理员</strong> ⚠️</td>
+</tr>
+</tbody>
+</table>
+<h3 id="%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%E7%A4%BA%E4%BE%8B">配置文件示例</h3>
+<p><strong>config.json</strong>:</p>
+<pre class="hljs"><code><div>{
+  <span class="hljs-attr">"uploadUrl"</span>: <span class="hljs-string">"http://10.136.72.59:8000/log"</span>,
+  <span class="hljs-attr">"failCache"</span>: <span class="hljs-string">"check_fail.json"</span>,
+  <span class="hljs-attr">"scriptPath"</span>: <span class="hljs-string">"check5.ps1"</span>
+}
+</div></code></pre>
+<h2 id="%F0%9F%9A%80-%E4%BD%BF%E7%94%A8%E6%96%B9%E6%B3%95">🚀 使用方法</h2>
+<h3 id="1-%E9%A6%96%E6%AC%A1%E8%BF%90%E8%A1%8C--%E6%8E%88%E6%9D%83%E8%BF%87%E6%9C%9F">1. 首次运行 / 授权过期</h3>
+<p>当检测不到有效授权时，程序会自动进入<strong>授权模式</strong>：</p>
+<ol>
+<li><strong>自动加载私钥</strong> - 自动加载同目录下的 <code>private_key.xml</code></li>
+<li><strong>输入授权网段</strong> - 支持以下格式：
+<ul>
+<li><code>192.168.1.0/24</code> - 标准CIDR格式</li>
+<li><code>192.168.1.100</code> - 自动补 <code>/24</code></li>
+<li><code>0.0.0.0</code> - 自动转换为 <code>0.0.0.0/0</code>（全网段授权）</li>
+</ul>
+</li>
+<li><strong>设置到期日期</strong> - 格式：<code>YYYY-MM-DD</code></li>
+<li><strong>生成授权文件</strong> - 程序使用私钥签发授权，生成新的 <code>license.json</code></li>
+</ol>
+<p>完成后，程序会立即校验该授权并进入基线检查流程。</p>
+<h3 id="2-%E6%AD%A3%E5%B8%B8%E8%BF%90%E8%A1%8C">2. 正常运行</h3>
+<p><strong>PowerShell 脚本方式</strong>:</p>
+<pre class="hljs"><code><div>powershell <span class="hljs-literal">-ExecutionPolicy</span> Bypass <span class="hljs-operator">-File</span> .\SecurityCheck.ps1
+</div></code></pre>
+<p><strong>EXE 可执行文件方式</strong>:</p>
+<pre class="hljs"><code><div>.\SecurityCheck.exe
+</div></code></pre>
+<h3 id="3-%E8%BF%90%E8%A1%8C%E6%B5%81%E7%A8%8B">3. 运行流程</h3>
+<ol>
+<li>
+<p><strong>授权验证</strong> - 程序读取并校验 <code>license.json</code>：</p>
+<ul>
+<li>✅ 验证签名是否有效</li>
+<li>✅ 检查到期日是否未过期</li>
+<li>✅ 检查本机任一网卡 IP 是否在授权网段内</li>
+</ul>
+</li>
+<li>
+<p><strong>基线检查</strong> - 校验通过后执行基线检查</p>
+</li>
+<li>
+<p><strong>结果上传</strong> - 将检查结果发送到 <code>config.json</code> 中的 <code>uploadUrl</code>（或默认值）</p>
+</li>
+<li>
+<p><strong>失败重试</strong> - 如果上传失败，会缓存到 <code>failCache</code> 文件，下次运行时自动补传</p>
+</li>
+</ol>
+<h2 id="%F0%9F%94%91-%E6%8E%88%E6%9D%83%E9%80%BB%E8%BE%91">🔑 授权逻辑</h2>
+<h3 id="%E6%8E%88%E6%9D%83%E6%96%87%E4%BB%B6%E7%BB%93%E6%9E%84">授权文件结构</h3>
+<p><strong>license.json</strong> 示例：</p>
+<pre class="hljs"><code><div>{
+  <span class="hljs-attr">"Data"</span>: {
+    <span class="hljs-attr">"Expire"</span>: <span class="hljs-string">"2025-12-31"</span>,
+    <span class="hljs-attr">"AllowedSubnets"</span>: [<span class="hljs-string">"192.168.0.0/16"</span>],
+    <span class="hljs-attr">"IssuedAt"</span>: <span class="hljs-string">"2025-08-21T12:00:00Z"</span>
+  },
+  <span class="hljs-attr">"Signature"</span>: <span class="hljs-string">"Base64签名字符串"</span>
+}
+</div></code></pre>
+<h3 id="%E6%A0%A1%E9%AA%8C%E8%A7%84%E5%88%99">校验规则</h3>
+<p>授权验证需要满足以下<strong>所有条件</strong>：</p>
+<ul>
+<li>✅ <strong>时间验证</strong> - 当前日期 ≤ Expire</li>
+<li>✅ <strong>网络验证</strong> - 当前任一网卡 IP 属于 AllowedSubnets</li>
+<li>✅ <strong>签名验证</strong> - 签名验证通过（RSA 公钥校验）</li>
+</ul>
+<p>满足以上条件即视为授权有效。</p>
+<h2 id="%E2%9A%99%EF%B8%8F-%E6%89%93%E5%8C%85%E8%AF%B4%E6%98%8E">⚙️ 打包说明</h2>
+<h3 id="%E6%89%93%E5%8C%85%E4%B8%BA-exe">打包为 EXE</h3>
+<p>推荐使用 <strong>PS2EXE</strong> 工具进行打包：</p>
+<pre class="hljs"><code><div><span class="hljs-comment"># 安装 PS2EXE</span>
+<span class="hljs-built_in">Install-Module</span> <span class="hljs-literal">-Name</span> PS2EXE <span class="hljs-literal">-Force</span>
+
+<span class="hljs-comment"># 打包脚本</span>
+ps2exe .\SecurityCheck.ps1 .\SecurityCheck.exe
+</div></code></pre>
+<h3 id="%E6%89%93%E5%8C%85%E9%80%89%E9%A1%B9">打包选项</h3>
+<pre class="hljs"><code><div><span class="hljs-comment"># 带图标打包</span>
+ps2exe .\SecurityCheck.ps1 .\SecurityCheck.exe <span class="hljs-literal">-IconFile</span> .\icon.ico
+
+<span class="hljs-comment"># 无控制台窗口打包</span>
+ps2exe .\SecurityCheck.ps1 .\SecurityCheck.exe <span class="hljs-literal">-NoConsole</span>
+
+</div></code></pre>
+<h2 id="%E7%B3%BB%E7%BB%9F%E8%A6%81%E6%B1%82">系统要求</h2>
+<ul>
+<li><strong>PowerShell</strong> ≥ v3.0（Win7-win8 需安装补丁）</li>
+<li><strong>Windows 系统</strong> - Win7 / Win8 / Win10 / Win11</li>
+<li><strong>网络连接</strong> - 用于结果上传</li>
+</ul>
+
+</body>
+</html>

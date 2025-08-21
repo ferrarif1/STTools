@@ -81,14 +81,26 @@ class EnhancedLogHandler(BaseHTTPRequestHandler):
             
             # 返回 Security Check 工具下载文件
             elif self.path == "/SecurityCheck_v5":
-                self.serve_file('SecurityCheck_v5.zip', 'application/zip', as_attachment=True)
+                self.serve_file('../SecurityCheck.exe', 'application/octet-stream', as_attachment=True)
             
-            elif self.path == "/msu":
-                self.serve_file('msu.zip', 'application/zip', as_attachment=True)
+            # Windows 7/8 补丁包
+            elif self.path == "/msu.zip":
+                self.serve_file('../server_dependencies/msu.zip', 'application/zip', as_attachment=True)
             
-            # 返回管理员使用说明页面 readme.html
-            elif self.path == "/readme":
-                self.serve_file("README.html", "text/html")
+            # 服务端依赖包
+            elif self.path == "/server.zip":
+                self.serve_file('packages.zip', 'application/zip', as_attachment=True)
+                # 如果packages.zip不存在，返回404
+                if not os.path.exists(os.path.join(BASE_DIR, 'packages.zip')):
+                    self.send_error(404, "Dependencies package not found")
+                    return
+            
+            # 文档页面
+            elif self.path == "/README-Server.html":
+                self.serve_file('../README-Server.html', 'text/html')
+            
+            elif self.path == "/README-Client.html":
+                self.serve_file('../README-Client.html', 'text/html')
             
             else:
                 self.send_error(404, "Not Found")
