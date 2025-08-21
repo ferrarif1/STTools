@@ -85,11 +85,11 @@ class EnhancedLogHandler(BaseHTTPRequestHandler):
             
             # Windows 7/8 补丁包
             elif self.path == "/msu.zip":
-                self.serve_file('../server_dependencies/msu.zip', 'application/zip', as_attachment=True)
+                self.serve_file('./msu.zip', 'application/zip', as_attachment=True)
             
             # 服务端依赖包
             elif self.path == "/server.zip":
-                self.serve_file('packages.zip', 'application/zip', as_attachment=True)
+                self.serve_file('./server.zip', 'application/zip', as_attachment=True)
                 # 如果packages.zip不存在，返回404
                 if not os.path.exists(os.path.join(BASE_DIR, 'packages.zip')):
                     self.send_error(404, "Dependencies package not found")

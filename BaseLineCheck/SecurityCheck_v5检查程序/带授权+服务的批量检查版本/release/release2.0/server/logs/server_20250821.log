@@ -324,3 +324,196 @@ ConnectionAbortedError: [WinError 10053] 你的主机中的软件中止了一个
 2025-08-21 11:48:06,557 - INFO - 172.16.1.20 - "GET /README-Server.html HTTP/1.1" 200 -
 2025-08-21 11:48:35,345 - INFO - 172.16.1.20 - "GET /health HTTP/1.1" 200 -
 2025-08-21 11:49:05,330 - INFO - 172.16.1.20 - "GET /health HTTP/1.1" 200 -
+2025-08-21 11:49:35,339 - INFO - 172.16.1.20 - "GET /health HTTP/1.1" 200 -
+2025-08-21 11:50:05,343 - INFO - 172.16.1.20 - "GET /health HTTP/1.1" 200 -
+2025-08-21 11:50:35,339 - INFO - 172.16.1.20 - "GET /health HTTP/1.1" 200 -
+2025-08-21 11:51:05,332 - INFO - 172.16.1.20 - "GET /health HTTP/1.1" 200 -
+2025-08-21 11:51:35,337 - INFO - 172.16.1.20 - "GET /health HTTP/1.1" 200 -
+2025-08-21 11:52:36,347 - INFO - 172.16.1.20 - "GET /health HTTP/1.1" 200 -
+2025-08-21 11:53:37,343 - INFO - 172.16.1.20 - "GET /health HTTP/1.1" 200 -
+2025-08-21 11:54:38,331 - INFO - 172.16.1.20 - "GET /health HTTP/1.1" 200 -
+2025-08-21 11:55:39,340 - INFO - 172.16.1.20 - "GET /health HTTP/1.1" 200 -
+2025-08-21 11:55:51,825 - WARNING - 文件不存在: ../server_dependencies/msu.zip
+2025-08-21 11:55:51,825 - INFO - 172.16.1.20 - code 404, message File not found
+2025-08-21 11:55:51,826 - INFO - 172.16.1.20 - "GET /msu.zip HTTP/1.1" 404 -
+2025-08-21 11:55:53,799 - WARNING - 文件不存在: packages.zip
+2025-08-21 11:55:53,799 - INFO - 172.16.1.20 - code 404, message File not found
+2025-08-21 11:55:53,799 - INFO - 172.16.1.20 - "GET /server.zip HTTP/1.1" 404 -
+2025-08-21 11:55:53,800 - INFO - 172.16.1.20 - code 404, message Dependencies package not found
+2025-08-21 11:55:53,800 - INFO - 172.16.1.20 - "GET /server.zip HTTP/1.1" 404 -
+2025-08-21 11:55:53,800 - ERROR - GET请求处理错误: [WinError 10053] 你的主机中的软件中止了一个已建立的连接。
+2025-08-21 11:55:53,801 - ERROR - Traceback (most recent call last):
+  File "C:\Users\revan\Desktop\STTools\BaseLineCheck\SecurityCheck_v5检查程序\带授权+服务的批量检查版本\release\release2.0\server\server_enhanced.py", line 95, in do_GET
+    self.send_error(404, "Dependencies package not found")
+  File "c:\users\revan\appdata\local\programs\python\python311\Lib\http\server.py", line 491, in send_error
+    self.wfile.write(body)
+  File "c:\users\revan\appdata\local\programs\python\python311\Lib\socketserver.py", line 834, in write
+    self._sock.sendall(b)
+ConnectionAbortedError: [WinError 10053] 你的主机中的软件中止了一个已建立的连接。
+
+2025-08-21 11:55:53,801 - INFO - 172.16.1.20 - code 500, message Internal Server Error
+2025-08-21 11:55:53,802 - INFO - 172.16.1.20 - "GET /server.zip HTTP/1.1" 500 -
+2025-08-21 11:55:53,803 - WARNING - 文件不存在: packages.zip
+2025-08-21 11:55:53,803 - INFO - 172.16.1.20 - code 404, message File not found
+2025-08-21 11:55:53,803 - INFO - 172.16.1.20 - "GET /server.zip HTTP/1.1" 404 -
+2025-08-21 11:55:53,804 - INFO - 172.16.1.20 - code 404, message Dependencies package not found
+2025-08-21 11:55:53,804 - INFO - 172.16.1.20 - "GET /server.zip HTTP/1.1" 404 -
+2025-08-21 11:55:53,804 - ERROR - GET请求处理错误: [WinError 10053] 你的主机中的软件中止了一个已建立的连接。
+2025-08-21 11:55:53,804 - ERROR - Traceback (most recent call last):
+  File "C:\Users\revan\Desktop\STTools\BaseLineCheck\SecurityCheck_v5检查程序\带授权+服务的批量检查版本\release\release2.0\server\server_enhanced.py", line 95, in do_GET
+    self.send_error(404, "Dependencies package not found")
+  File "c:\users\revan\appdata\local\programs\python\python311\Lib\http\server.py", line 491, in send_error
+    self.wfile.write(body)
+  File "c:\users\revan\appdata\local\programs\python\python311\Lib\socketserver.py", line 834, in write
+    self._sock.sendall(b)
+ConnectionAbortedError: [WinError 10053] 你的主机中的软件中止了一个已建立的连接。
+
+2025-08-21 11:55:53,804 - INFO - 172.16.1.20 - code 500, message Internal Server Error
+2025-08-21 11:55:53,804 - INFO - 172.16.1.20 - "GET /server.zip HTTP/1.1" 500 -
+2025-08-21 11:56:02,720 - INFO - 172.16.1.20 - "GET / HTTP/1.1" 200 -
+2025-08-21 11:56:02,725 - INFO - 172.16.1.20 - "GET /health HTTP/1.1" 200 -
+2025-08-21 11:56:03,420 - WARNING - 文件不存在: ../server_dependencies/msu.zip
+2025-08-21 11:56:03,420 - INFO - 172.16.1.20 - code 404, message File not found
+2025-08-21 11:56:03,421 - INFO - 172.16.1.20 - "GET /msu.zip HTTP/1.1" 404 -
+2025-08-21 11:56:04,877 - WARNING - 文件不存在: packages.zip
+2025-08-21 11:56:04,877 - INFO - 172.16.1.20 - code 404, message File not found
+2025-08-21 11:56:04,877 - INFO - 172.16.1.20 - "GET /server.zip HTTP/1.1" 404 -
+2025-08-21 11:56:04,877 - INFO - 172.16.1.20 - code 404, message Dependencies package not found
+2025-08-21 11:56:04,877 - INFO - 172.16.1.20 - "GET /server.zip HTTP/1.1" 404 -
+2025-08-21 11:56:04,877 - ERROR - GET请求处理错误: [WinError 10053] 你的主机中的软件中止了一个已建立的连接。
+2025-08-21 11:56:04,878 - ERROR - Traceback (most recent call last):
+  File "C:\Users\revan\Desktop\STTools\BaseLineCheck\SecurityCheck_v5检查程序\带授权+服务的批量检查版本\release\release2.0\server\server_enhanced.py", line 95, in do_GET
+    self.send_error(404, "Dependencies package not found")
+  File "c:\users\revan\appdata\local\programs\python\python311\Lib\http\server.py", line 491, in send_error
+    self.wfile.write(body)
+  File "c:\users\revan\appdata\local\programs\python\python311\Lib\socketserver.py", line 834, in write
+    self._sock.sendall(b)
+ConnectionAbortedError: [WinError 10053] 你的主机中的软件中止了一个已建立的连接。
+
+2025-08-21 11:56:04,878 - INFO - 172.16.1.20 - code 500, message Internal Server Error
+2025-08-21 11:56:04,879 - INFO - 172.16.1.20 - "GET /server.zip HTTP/1.1" 500 -
+2025-08-21 11:56:04,881 - WARNING - 文件不存在: packages.zip
+2025-08-21 11:56:04,881 - INFO - 172.16.1.20 - code 404, message File not found
+2025-08-21 11:56:04,881 - INFO - 172.16.1.20 - "GET /server.zip HTTP/1.1" 404 -
+2025-08-21 11:56:04,881 - INFO - 172.16.1.20 - code 404, message Dependencies package not found
+2025-08-21 11:56:04,881 - INFO - 172.16.1.20 - "GET /server.zip HTTP/1.1" 404 -
+2025-08-21 11:56:04,882 - ERROR - GET请求处理错误: [WinError 10053] 你的主机中的软件中止了一个已建立的连接。
+2025-08-21 11:56:04,882 - ERROR - Traceback (most recent call last):
+  File "C:\Users\revan\Desktop\STTools\BaseLineCheck\SecurityCheck_v5检查程序\带授权+服务的批量检查版本\release\release2.0\server\server_enhanced.py", line 95, in do_GET
+    self.send_error(404, "Dependencies package not found")
+  File "c:\users\revan\appdata\local\programs\python\python311\Lib\http\server.py", line 491, in send_error
+    self.wfile.write(body)
+  File "c:\users\revan\appdata\local\programs\python\python311\Lib\socketserver.py", line 834, in write
+    self._sock.sendall(b)
+ConnectionAbortedError: [WinError 10053] 你的主机中的软件中止了一个已建立的连接。
+
+2025-08-21 11:56:04,882 - INFO - 172.16.1.20 - code 500, message Internal Server Error
+2025-08-21 11:56:04,882 - INFO - 172.16.1.20 - "GET /server.zip HTTP/1.1" 500 -
+2025-08-21 11:56:09,553 - INFO - 172.16.1.20 - "GET / HTTP/1.1" 200 -
+2025-08-21 11:56:09,558 - INFO - 172.16.1.20 - "GET /health HTTP/1.1" 200 -
+2025-08-21 11:56:14,133 - INFO - 收到信号 2，正在关闭服务器...
+2025-08-21 11:56:21,445 - INFO - 正在启动增强版日志服务器...
+2025-08-21 11:56:21,454 - INFO - 增强版日志服务器已启动：http://0.0.0.0:8000/
+2025-08-21 11:56:21,454 - INFO - 健康检查: http://0.0.0.0:8000/health
+2025-08-21 11:56:21,454 - INFO - 状态信息: http://0.0.0.0:8000/status
+2025-08-21 11:56:21,455 - INFO - PID文件: C:\Users\revan\Desktop\STTools\BaseLineCheck\SecurityCheck_v5检查程序\带授权+服务的批量检查版本\release\release2.0\server\server.pid
+2025-08-21 11:56:24,488 - INFO - 172.16.1.20 - "GET / HTTP/1.1" 200 -
+2025-08-21 11:56:24,494 - INFO - 172.16.1.20 - "GET /health HTTP/1.1" 200 -
+2025-08-21 11:56:26,118 - WARNING - 文件不存在: ../server_dependencies/msu.zip
+2025-08-21 11:56:26,118 - INFO - 172.16.1.20 - code 404, message File not found
+2025-08-21 11:56:26,119 - INFO - 172.16.1.20 - "GET /msu.zip HTTP/1.1" 404 -
+2025-08-21 11:56:54,503 - INFO - 172.16.1.20 - "GET /health HTTP/1.1" 200 -
+2025-08-21 11:57:16,150 - WARNING - 文件不存在: ../server_dependencies/msu.zip
+2025-08-21 11:57:16,150 - INFO - 172.16.1.20 - code 404, message File not found
+2025-08-21 11:57:16,151 - INFO - 172.16.1.20 - "GET /msu.zip HTTP/1.1" 404 -
+2025-08-21 11:57:18,881 - INFO - 172.16.1.20 - "GET / HTTP/1.1" 200 -
+2025-08-21 11:57:18,889 - INFO - 172.16.1.20 - "GET /health HTTP/1.1" 200 -
+2025-08-21 11:57:20,919 - WARNING - 文件不存在: ../server_dependencies/msu.zip
+2025-08-21 11:57:20,919 - INFO - 172.16.1.20 - code 404, message File not found
+2025-08-21 11:57:20,920 - INFO - 172.16.1.20 - "GET /msu.zip HTTP/1.1" 404 -
+2025-08-21 11:57:25,056 - INFO - 172.16.1.20 - "GET / HTTP/1.1" 200 -
+2025-08-21 11:57:25,062 - INFO - 172.16.1.20 - "GET /health HTTP/1.1" 200 -
+2025-08-21 11:57:25,216 - INFO - 172.16.1.20 - "GET / HTTP/1.1" 200 -
+2025-08-21 11:57:25,222 - INFO - 172.16.1.20 - "GET /health HTTP/1.1" 200 -
+2025-08-21 11:57:25,400 - INFO - 172.16.1.20 - "GET / HTTP/1.1" 200 -
+2025-08-21 11:57:25,407 - INFO - 172.16.1.20 - "GET /health HTTP/1.1" 200 -
+2025-08-21 11:57:55,413 - INFO - 172.16.1.20 - "GET /health HTTP/1.1" 200 -
+2025-08-21 11:58:25,421 - INFO - 172.16.1.20 - "GET /health HTTP/1.1" 200 -
+2025-08-21 11:58:55,417 - INFO - 172.16.1.20 - "GET /health HTTP/1.1" 200 -
+2025-08-21 11:58:59,829 - WARNING - 文件不存在: ../server_dependencies/msu.zip
+2025-08-21 11:58:59,830 - INFO - 172.16.1.20 - code 404, message File not found
+2025-08-21 11:58:59,830 - INFO - 172.16.1.20 - "GET /msu.zip HTTP/1.1" 404 -
+2025-08-21 11:59:01,783 - INFO - 172.16.1.20 - "GET / HTTP/1.1" 200 -
+2025-08-21 11:59:01,789 - INFO - 172.16.1.20 - "GET /health HTTP/1.1" 200 -
+2025-08-21 11:59:02,652 - WARNING - 文件不存在: ../server_dependencies/msu.zip
+2025-08-21 11:59:02,653 - INFO - 172.16.1.20 - code 404, message File not found
+2025-08-21 11:59:02,653 - INFO - 172.16.1.20 - "GET /msu.zip HTTP/1.1" 404 -
+2025-08-21 11:59:07,742 - INFO - 收到信号 2，正在关闭服务器...
+2025-08-21 11:59:16,333 - INFO - 正在启动增强版日志服务器...
+2025-08-21 11:59:16,339 - INFO - 增强版日志服务器已启动：http://0.0.0.0:8000/
+2025-08-21 11:59:16,339 - INFO - 健康检查: http://0.0.0.0:8000/health
+2025-08-21 11:59:16,339 - INFO - 状态信息: http://0.0.0.0:8000/status
+2025-08-21 11:59:16,339 - INFO - PID文件: C:\Users\revan\Desktop\STTools\BaseLineCheck\SecurityCheck_v5检查程序\带授权+服务的批量检查版本\release\release2.0\server\server.pid
+2025-08-21 11:59:18,184 - INFO - 172.16.1.20 - "GET / HTTP/1.1" 200 -
+2025-08-21 11:59:18,190 - INFO - 172.16.1.20 - "GET /health HTTP/1.1" 200 -
+2025-08-21 11:59:18,584 - INFO - 172.16.1.20 - "GET / HTTP/1.1" 200 -
+2025-08-21 11:59:18,589 - INFO - 172.16.1.20 - "GET /health HTTP/1.1" 200 -
+2025-08-21 11:59:19,336 - INFO - 172.16.1.20 - "GET / HTTP/1.1" 200 -
+2025-08-21 11:59:19,340 - INFO - 172.16.1.20 - "GET /health HTTP/1.1" 200 -
+2025-08-21 11:59:19,496 - INFO - 172.16.1.20 - "GET / HTTP/1.1" 200 -
+2025-08-21 11:59:19,503 - INFO - 172.16.1.20 - "GET /health HTTP/1.1" 200 -
+2025-08-21 11:59:20,661 - WARNING - 文件不存在: ../server_dependencies/msu.zip
+2025-08-21 11:59:20,662 - INFO - 172.16.1.20 - code 404, message File not found
+2025-08-21 11:59:20,662 - INFO - 172.16.1.20 - "GET /msu.zip HTTP/1.1" 404 -
+2025-08-21 11:59:22,525 - WARNING - 文件不存在: packages.zip
+2025-08-21 11:59:22,526 - INFO - 172.16.1.20 - code 404, message File not found
+2025-08-21 11:59:22,526 - INFO - 172.16.1.20 - "GET /server.zip HTTP/1.1" 404 -
+2025-08-21 11:59:22,526 - INFO - 172.16.1.20 - code 404, message Dependencies package not found
+2025-08-21 11:59:22,527 - INFO - 172.16.1.20 - "GET /server.zip HTTP/1.1" 404 -
+2025-08-21 11:59:22,527 - ERROR - GET请求处理错误: [WinError 10053] 你的主机中的软件中止了一个已建立的连接。
+2025-08-21 11:59:22,530 - ERROR - Traceback (most recent call last):
+  File "C:\Users\revan\Desktop\STTools\BaseLineCheck\SecurityCheck_v5检查程序\带授权+服务的批量检查版本\release\release2.0\server\server_enhanced.py", line 95, in do_GET
+    self.send_error(404, "Dependencies package not found")
+  File "c:\users\revan\appdata\local\programs\python\python311\Lib\http\server.py", line 491, in send_error
+    self.wfile.write(body)
+  File "c:\users\revan\appdata\local\programs\python\python311\Lib\socketserver.py", line 834, in write
+    self._sock.sendall(b)
+ConnectionAbortedError: [WinError 10053] 你的主机中的软件中止了一个已建立的连接。
+
+2025-08-21 11:59:22,530 - INFO - 172.16.1.20 - code 500, message Internal Server Error
+2025-08-21 11:59:22,530 - INFO - 172.16.1.20 - "GET /server.zip HTTP/1.1" 500 -
+2025-08-21 11:59:22,532 - WARNING - 文件不存在: packages.zip
+2025-08-21 11:59:22,532 - INFO - 172.16.1.20 - code 404, message File not found
+2025-08-21 11:59:22,532 - INFO - 172.16.1.20 - "GET /server.zip HTTP/1.1" 404 -
+2025-08-21 11:59:22,533 - INFO - 172.16.1.20 - code 404, message Dependencies package not found
+2025-08-21 11:59:22,533 - INFO - 172.16.1.20 - "GET /server.zip HTTP/1.1" 404 -
+2025-08-21 11:59:49,514 - INFO - 172.16.1.20 - "GET /health HTTP/1.1" 200 -
+2025-08-21 12:00:20,336 - INFO - 172.16.1.20 - "GET /health HTTP/1.1" 200 -
+2025-08-21 12:00:50,337 - INFO - 172.16.1.20 - "GET /health HTTP/1.1" 200 -
+2025-08-21 12:01:20,338 - INFO - 172.16.1.20 - "GET /health HTTP/1.1" 200 -
+2025-08-21 12:01:50,341 - INFO - 172.16.1.20 - "GET /health HTTP/1.1" 200 -
+2025-08-21 12:02:15,372 - INFO - 收到信号 2，正在关闭服务器...
+2025-08-21 12:02:21,349 - INFO - 正在启动增强版日志服务器...
+2025-08-21 12:02:21,356 - INFO - 增强版日志服务器已启动：http://0.0.0.0:8000/
+2025-08-21 12:02:21,356 - INFO - 健康检查: http://0.0.0.0:8000/health
+2025-08-21 12:02:21,357 - INFO - 状态信息: http://0.0.0.0:8000/status
+2025-08-21 12:02:21,357 - INFO - PID文件: C:\Users\revan\Desktop\STTools\BaseLineCheck\SecurityCheck_v5检查程序\带授权+服务的批量检查版本\release\release2.0\server\server.pid
+2025-08-21 12:02:21,589 - INFO - 172.16.1.20 - "GET /health HTTP/1.1" 200 -
+2025-08-21 12:02:24,936 - INFO - 172.16.1.20 - "GET / HTTP/1.1" 200 -
+2025-08-21 12:02:24,942 - INFO - 172.16.1.20 - "GET /health HTTP/1.1" 200 -
+2025-08-21 12:02:26,958 - INFO - 172.16.1.20 - "GET /msu.zip HTTP/1.1" 200 -
+2025-08-21 12:02:30,117 - INFO - 172.16.1.20 - "GET /server.zip HTTP/1.1" 200 -
+2025-08-21 12:02:30,243 - INFO - 172.16.1.20 - code 404, message Dependencies package not found
+2025-08-21 12:02:30,244 - INFO - 172.16.1.20 - "GET /server.zip HTTP/1.1" 404 -
+2025-08-21 12:02:30,246 - INFO - 172.16.1.20 - "GET /server.zip HTTP/1.1" 200 -
+2025-08-21 12:02:30,391 - INFO - 172.16.1.20 - code 404, message Dependencies package not found
+2025-08-21 12:02:30,391 - INFO - 172.16.1.20 - "GET /server.zip HTTP/1.1" 404 -
+2025-08-21 12:02:55,332 - INFO - 172.16.1.20 - "GET /health HTTP/1.1" 200 -
+2025-08-21 12:03:24,946 - INFO - 172.16.1.20 - "GET /health HTTP/1.1" 200 -
+2025-08-21 12:03:25,656 - INFO - 172.16.1.20 - "GET /README-Server.html HTTP/1.1" 200 -
+2025-08-21 12:03:36,964 - INFO - 172.16.1.20 - "GET /README-Client.html HTTP/1.1" 200 -
+2025-08-21 12:03:55,340 - INFO - 172.16.1.20 - "GET /health HTTP/1.1" 200 -
+2025-08-21 12:04:25,342 - INFO - 172.16.1.20 - "GET /health HTTP/1.1" 200 -
+2025-08-21 12:04:55,339 - INFO - 172.16.1.20 - "GET /health HTTP/1.1" 200 -
+2025-08-21 12:05:25,338 - INFO - 172.16.1.20 - "GET /health HTTP/1.1" 200 -
+2025-08-21 12:05:55,341 - INFO - 172.16.1.20 - "GET /health HTTP/1.1" 200 -
