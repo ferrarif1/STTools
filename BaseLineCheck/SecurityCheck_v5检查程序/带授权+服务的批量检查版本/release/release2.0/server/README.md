@@ -1,6 +1,6 @@
-# 🛡️ Security Check 服务器 - 内网环境完整解决方案
+# 🛡️ SecurityCheck
 
-> 专为内网环境设计的Security Check日志收集服务器，支持离线安装、任务计划程序部署和自动重启监控
+> Security Check基线检查工具
 
 [![Python](https://img.shields.io/badge/python-3.7+-blue.svg)](https://www.python.org/)
 [![Windows](https://img.shields.io/badge/Windows-7%2B-green.svg)](https://www.microsoft.com/windows/)
@@ -504,8 +504,3 @@ curl http://localhost:8000/health
 - **numpy** 2.2.4 - 数值计算库
 - **其他依赖包** - 详见packages目录
 
----
-
-⭐ **Security Check 服务器 - 内网环境的最佳选择！**
-
-> 简单、可靠、支持离线安装，专为内网环境设计的高可用日志收集服务器。 

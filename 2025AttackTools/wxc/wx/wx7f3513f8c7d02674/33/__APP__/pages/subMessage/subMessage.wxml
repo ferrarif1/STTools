@@ -1,6 +1,0 @@
-<view class="mes_con">
-    <button bindtap="__e" data-event-opts="{{[ [ 'tap',[ [ 'too',['$event'] ] ] ] ]}}" type="default">打开</button>
-    <image alt class="message1 _img" src="{{$root.m0}}"></image>
-    <image alt class="message2 _img" src="https://cdnweb11.96225.com/inthis_pro/20250513/145d1360ccbb44fb9210a2c44d98f416/2389i23478934781747131988477.jpg"></image>
-    <image alt bindtap="__e" class="message3 _img" data-event-opts="{{[ [ 'tap',[ [ 'subMessage',['$event'] ] ] ] ]}}" src="{{$root.m1}}"></image>
-</view>
