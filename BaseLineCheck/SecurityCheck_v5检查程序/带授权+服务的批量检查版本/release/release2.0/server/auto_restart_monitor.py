@@ -20,7 +20,7 @@ SERVER_URL = "http://localhost:8000"
 HEALTH_URL = f"{SERVER_URL}/health"
 CHECK_INTERVAL = 30  # 检查间隔（秒）
 RESTART_DELAY = 5    # 重启延迟（秒）
-MAX_RESTART_ATTEMPTS = 3  # 最大重启尝试次数
+MAX_RESTART_ATTEMPTS = 50  # 最大重启尝试次数
 
 # 日志配置
 LOG_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs")

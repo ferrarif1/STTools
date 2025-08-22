@@ -7,3 +7,16 @@
 2025-08-21 10:11:17,827 - INFO - 创建脚本: check_task_status.bat
 2025-08-21 10:11:17,828 - INFO - 创建脚本: quick_start.bat
 2025-08-21 10:11:33,844 - INFO - 任务启动成功
+2025-08-21 12:45:25,933 - WARNING - 任务 SecurityCheckServer 已存在
+2025-08-21 12:45:25,949 - INFO - 创建脚本: start_task.bat
+2025-08-21 12:45:25,949 - INFO - 创建脚本: stop_task.bat
+2025-08-21 12:45:25,949 - INFO - 创建脚本: restart_task.bat
+2025-08-21 12:45:25,949 - INFO - 创建脚本: check_task_status.bat
+2025-08-21 12:45:25,965 - INFO - 创建脚本: quick_start.bat
+2025-08-21 12:45:44,267 - INFO - 任务启动成功
+2025-08-21 12:46:15,705 - WARNING - 任务 SecurityCheckServer 已存在
+2025-08-21 12:46:15,721 - INFO - 创建脚本: start_task.bat
+2025-08-21 12:46:15,721 - INFO - 创建脚本: stop_task.bat
+2025-08-21 12:46:15,721 - INFO - 创建脚本: restart_task.bat
+2025-08-21 12:46:15,721 - INFO - 创建脚本: check_task_status.bat
+2025-08-21 12:46:15,721 - INFO - 创建脚本: quick_start.bat

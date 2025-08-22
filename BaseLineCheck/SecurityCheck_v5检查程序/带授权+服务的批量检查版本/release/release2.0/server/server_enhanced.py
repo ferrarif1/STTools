@@ -81,7 +81,7 @@ class EnhancedLogHandler(BaseHTTPRequestHandler):
             
             # 返回 Security Check 工具下载文件
             elif self.path == "/SecurityCheck_v5":
-                self.serve_file('../SecurityCheck.exe', 'application/octet-stream', as_attachment=True)
+                self.serve_file('../SecurityCheck.zip', 'application/zip', as_attachment=True)
             
             # Windows 7/8 补丁包
             elif self.path == "/msu.zip":
