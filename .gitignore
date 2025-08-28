@@ -8,3 +8,5 @@ BaseLineCheck/result.txt
 BaseLineCheck/SecurityCheck_v5检查程序/带授权+服务的批量检查版本/release/release2.0/server/logs/server_20250822.log
 BaseLineCheck/SecurityCheck_v5检查程序/带授权+服务的批量检查版本/release/release2.0/server/logs/server_20250822.log
 /BaseLineCheck/SecurityCheck_v5检查程序/带授权+服务的批量检查版本/release/release2.0/server/logs
+/2025AttackTools/WxScanner/node_modules
+/2025AttackTools/WxScanner/wx
