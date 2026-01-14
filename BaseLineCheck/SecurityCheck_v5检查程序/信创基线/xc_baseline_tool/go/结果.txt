@@ -1,0 +1,224 @@
+admin@admin-PC:~$ '/home/admin/Desktop/xc_baseline_tool/go/run_gui.sh'
+未检测到图形组件(zenity/kdialog)。
+系统识别: UOS Desktop 20 E
+
+[ftp_service] FTP服务禁用
+- 结果: pass
+- 当前: 未发现运行中的FTP服务
+- 期望: FTP服务未运行且已禁用
+
+[nic_info] 网卡信息检查
+- 结果: info
+- 当前: 1: lo    inet 127.0.0.1/8 scope host lo\       valid_lft forever preferred_lft forever; 1: lo    inet6 ::1/128 scope host \       valid_lft forever preferred_lft forever; 2: ens33    inet 192.168.137.176/24 brd 192.168.137.255 scope global dynamic noprefixroute ens33\       valid_lft 1029sec preferred_lft 1029sec; 2: ens33    inet6 fe80::17eb:15cb:451:5ac1/64 scope link noprefixroute \       valid_lft forever preferred_lft forever
+- 期望: 仅展示信息
+
+[risky_ports] 高危端口状态检测
+- 结果: pass
+- 当前: 无高危端口监听
+- 期望: 无高危端口监听
+
+[ipv6_disabled] IPv6禁用状态
+- 结果: fail
+- 当前: disable_ipv6=0
+- 期望: IPv6已禁用
+
+[patch_updates] 高危漏洞修复
+- 结果: manual
+- 当前: 无法解析更新数量
+- 期望: 无待更新补丁
+
+[password_policy] 密码策略
+- 结果: pass
+- 当前: MAX=90, MIN=1, LEN=8, PAM=ok
+- 期望: 最小长度>=8，最短1天，最长90天，复杂度开启
+
+[guest_user] Guest用户状态
+- 结果: pass
+- 当前: guest不存在
+- 期望: guest账号不存在或已锁定
+
+[usb_autoplay] U盘自动播放
+- 结果: pass
+- 当前: automount=false, automount-open=false
+- 期望: 自动挂载/自动打开关闭
+
+[chrome_version] 浏览器版本检测
+- 结果: info
+- 当前: 未安装Chrome/Chromium
+- 期望: 仅展示信息
+
+[lock_screen] 锁屏策略
+- 结果: fail
+- 当前: lock-enabled=true, idle-delay=uint32 900, lock-delay=uint32 0
+- 期望: 锁屏启用，空闲15分钟内锁定
+admin@admin-PC:~$ '/home/admin/Desktop/xc_baseline_tool/go/xc-baseline-go-amd64'
+用法:
+  xc-baseline-go --check [--json] [--output FILE]
+  xc-baseline-go --apply ITEM_ID
+  xc-baseline-go --apply-all [--ui]
+  xc-baseline-go --list
+  xc-baseline-go --ui-info
+admin@admin-PC:~$ '/home/admin/Desktop/xc_baseline_tool/go/xc-baseline-go-amd64' --list
+ftp_service     FTP服务禁用
+nic_info        网卡信息检查
+risky_ports     高危端口状态检测
+ipv6_disabled   IPv6禁用状态
+patch_updates   高危漏洞修复
+password_policy 密码策略
+guest_user      Guest用户状态
+usb_autoplay    U盘自动播放
+chrome_version  浏览器版本检测
+lock_screen     锁屏策略
+admin@admin-PC:~$ '/home/admin/Desktop/xc_baseline_tool/go/xc-baseline-go-amd64' --ui-info
+desktop=deepin
+display=x11
+ui_backend=
+admin@admin-PC:~$ '/home/admin/Desktop/xc_baseline_tool/go/xc-baseline-go-amd64' --apply ftp_service
+需要root权限执行设置操作
+admin@admin-PC:~$ sudo '/home/admin/Desktop/xc_baseline_tool/go/xc-baseline-go-amd64' --apply ftp_service
+请输入密码:
+48密码验证失败，您还可以尝试4次
+对不起，请重试。
+请输入密码:
+密码验证失败，您还可以尝试3次
+对不起，请重试。
+请输入密码:
+验证成功
+已应用: ftp_service
+admin@admin-PC:~$ '/home/admin/Desktop/xc_baseline_tool/go/xc-baseline-go-amd64' --check
+系统识别: UOS Desktop 20 E
+
+[ftp_service] FTP服务禁用
+- 结果: pass
+- 当前: 未发现运行中的FTP服务
+- 期望: FTP服务未运行且已禁用
+
+[nic_info] 网卡信息检查
+- 结果: info
+- 当前: 1: lo    inet 127.0.0.1/8 scope host lo\       valid_lft forever preferred_lft forever; 1: lo    inet6 ::1/128 scope host \       valid_lft forever preferred_lft forever; 2: ens33    inet 192.168.137.176/24 brd 192.168.137.255 scope global dynamic noprefixroute ens33\       valid_lft 1624sec preferred_lft 1624sec; 2: ens33    inet6 fe80::17eb:15cb:451:5ac1/64 scope link noprefixroute \       valid_lft forever preferred_lft forever
+- 期望: 仅展示信息
+
+[risky_ports] 高危端口状态检测
+- 结果: pass
+- 当前: 无高危端口监听
+- 期望: 无高危端口监听
+
+[ipv6_disabled] IPv6禁用状态
+- 结果: fail
+- 当前: disable_ipv6=0
+- 期望: IPv6已禁用
+
+[patch_updates] 高危漏洞修复
+- 结果: manual
+- 当前: 无法解析更新数量
+- 期望: 无待更新补丁
+
+[password_policy] 密码策略
+- 结果: pass
+- 当前: MAX=90, MIN=1, LEN=8, PAM=ok
+- 期望: 最小长度>=8，最短1天，最长90天，复杂度开启
+
+[guest_user] Guest用户状态
+- 结果: pass
+- 当前: guest不存在
+- 期望: guest账号不存在或已锁定
+
+[usb_autoplay] U盘自动播放
+- 结果: pass
+- 当前: automount=false, automount-open=false
+- 期望: 自动挂载/自动打开关闭
+
+[chrome_version] 浏览器版本检测
+- 结果: info
+- 当前: 未安装Chrome/Chromium
+- 期望: 仅展示信息
+
+[lock_screen] 锁屏策略
+- 结果: fail
+- 当前: lock-enabled=true, idle-delay=uint32 900, lock-delay=uint32 0
+- 期望: 锁屏启用，空闲15分钟内锁定
+
+admin@admin-PC:~$ '/home/admin/Desktop/xc_baseline_tool/go/xc-baseline-go-amd64' --lock_screen
+flag provided but not defined: -lock_screen
+Usage of /home/admin/Desktop/xc_baseline_tool/go/xc-baseline-go-amd64:
+  -apply string
+        应用指定基线项
+  -apply-all
+        应用所有可设置项
+  -check
+        执行全部基线检查
+  -json
+        JSON输出
+  -list
+        列出基线项
+  -output string
+        输出到文件
+  -ui
+        启用原生图形交互
+  -ui-info
+        输出桌面环境与UI组件检测结果
+admin@admin-PC:~$ '/home/admin/Desktop/xc_baseline_tool/go/xc-baseline-go-amd64' --apply --lock_screen
+未找到基线项: --lock_screen
+admin@admin-PC:~$ '/home/admin/Desktop/xc_baseline_tool/go/xc-baseline-go-amd64' --apply -lock_screen
+未找到基线项: -lock_screen
+admin@admin-PC:~$ '/home/admin/Desktop/xc_baseline_tool/go/xc-baseline-go-amd64' --apply lock_screen
+需要root权限执行设置操作
+admin@admin-PC:~$ sudo '/home/admin/Desktop/xc_baseline_tool/go/xc-baseline-go-amd64' --apply lock_screen
+已应用: lock_screen
+admin@admin-PC:~$ 
+admin@admin-PC:~$ '/home/admin/Desktop/xc_baseline_tool/go/xc-baseline-go-amd64' --check系统识别: UOS Desktop 20 E
+
+[ftp_service] FTP服务禁用
+- 结果: pass
+- 当前: 未发现运行中的FTP服务
+- 期望: FTP服务未运行且已禁用
+
+[nic_info] 网卡信息检查
+- 结果: info
+- 当前: 1: lo    inet 127.0.0.1/8 scope host lo\       valid_lft forever preferred_lft forever; 1: lo    inet6 ::1/128 scope host \       valid_lft forever preferred_lft forever; 2: ens33    inet 192.168.137.176/24 brd 192.168.137.255 scope global dynamic noprefixroute ens33\       valid_lft 1545sec preferred_lft 1545sec; 2: ens33    inet6 fe80::17eb:15cb:451:5ac1/64 scope link noprefixroute \       valid_lft forever preferred_lft forever
+- 期望: 仅展示信息
+
+[risky_ports] 高危端口状态检测
+- 结果: pass
+- 当前: 无高危端口监听
+- 期望: 无高危端口监听
+
+[ipv6_disabled] IPv6禁用状态
+- 结果: fail
+- 当前: disable_ipv6=0
+- 期望: IPv6已禁用
+
+[patch_updates] 高危漏洞修复
+- 结果: manual
+- 当前: 无法解析更新数量
+- 期望: 无待更新补丁
+
+[password_policy] 密码策略
+- 结果: pass
+- 当前: MAX=90, MIN=1, LEN=8, PAM=ok
+- 期望: 最小长度>=8，最短1天，最长90天，复杂度开启
+
+[guest_user] Guest用户状态
+- 结果: pass
+- 当前: guest不存在
+- 期望: guest账号不存在或已锁定
+
+[usb_autoplay] U盘自动播放
+- 结果: pass
+- 当前: automount=false, automount-open=false
+- 期望: 自动挂载/自动打开关闭
+
+[chrome_version] 浏览器版本检测
+- 结果: info
+- 当前: 未安装Chrome/Chromium
+- 期望: 仅展示信息
+
+[lock_screen] 锁屏策略
+- 结果: fail
+- 当前: lock-enabled=true, idle-delay=uint32 900, lock-delay=uint32 0
+- 期望: 锁屏启用，空闲15分钟内锁定
+
+admin@admin-PC:~$ '/home/admin/Desktop/xc_baseline_tool/go/xc-baseline-go-amd64' --apply lock_screen
+需要root权限执行设置操作
+admin@admin-PC:~$ ^C
+admin@admin-PC:~$ 

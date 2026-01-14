@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=信创基线检查
+Comment=国产信创系统基线检查与设置
+Exec=/path/to/xc_baseline_tool/go/run_gui.sh
+Terminal=false
+Categories=Utility;Security;
