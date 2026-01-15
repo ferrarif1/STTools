@@ -45,6 +45,14 @@ type Output struct {
 	Items []OutputItem `json:"items"`
 }
 
+type OSInfo struct {
+	ID      string
+	Name    string
+	Version string
+	Pretty  string
+	IDLike  string
+}
+
 func main() {
 	var (
 		flagCheck    = flag.Bool("check", false, "执行全部基线检查")
@@ -404,15 +412,12 @@ func findItem(items []Item, id string) (Item, bool) {
 }
 
 func readOSRelease() string {
-	data, err := os.ReadFile("/etc/os-release")
-	if err != nil {
-		return "Linux"
+	info := detectOSInfo()
+	if info.Pretty != "" {
+		return info.Pretty
 	}
-	lines := strings.Split(string(data), "\n")
-	for _, line := range lines {
-		if strings.HasPrefix(line, "PRETTY_NAME=") {
-			return strings.Trim(strings.TrimPrefix(line, "PRETTY_NAME="), "\"")
-		}
+	if info.Name != "" {
+		return info.Name
 	}
 	return "Linux"
 }
@@ -553,11 +558,15 @@ func checkFirewalldBlocks(ports []int) (string, []string) {
 	for _, port := range ports {
 		for _, proto := range []string{"tcp", "udp"} {
 			if firewalldPortAllowed(port, proto) {
-				missing = append(missing, fmt.Sprintf("%d/%s", port, proto))
+				missing = append(missing, fmt.Sprintf("%d/%s(in)", port, proto))
+				missing = append(missing, fmt.Sprintf("%d/%s(out)", port, proto))
 				continue
 			}
-			if !firewalldHasDenyRule(richRules, port, proto) {
-				missing = append(missing, fmt.Sprintf("%d/%s", port, proto))
+			if !firewalldHasDenyRule(richRules, port, proto, "in") {
+				missing = append(missing, fmt.Sprintf("%d/%s(in)", port, proto))
+			}
+			if !firewalldHasDenyRule(richRules, port, proto, "out") {
+				missing = append(missing, fmt.Sprintf("%d/%s(out)", port, proto))
 			}
 		}
 	}
@@ -569,11 +578,15 @@ func firewalldPortAllowed(port int, proto string) bool {
 	return strings.TrimSpace(out) == "yes"
 }
 
-func firewalldHasDenyRule(rules string, port int, proto string) bool {
+func firewalldHasDenyRule(rules string, port int, proto string, direction string) bool {
+	dir := ""
+	if direction == "out" {
+		dir = `direction="out".*`
+	}
 	patterns := []string{
-		fmt.Sprintf(`port port="%d" protocol="%s".*reject`, port, proto),
-		fmt.Sprintf(`port port="%d" protocol="%s".*drop`, port, proto),
-		fmt.Sprintf(`port port="%d" protocol="%s".*deny`, port, proto),
+		fmt.Sprintf(`%sport port="%d" protocol="%s".*reject`, dir, port, proto),
+		fmt.Sprintf(`%sport port="%d" protocol="%s".*drop`, dir, port, proto),
+		fmt.Sprintf(`%sport port="%d" protocol="%s".*deny`, dir, port, proto),
 	}
 	for _, p := range patterns {
 		re := regexp.MustCompile(p)
@@ -585,12 +598,16 @@ func firewalldHasDenyRule(rules string, port int, proto string) bool {
 }
 
 func checkIptablesBlocks(ports []int) (string, []string) {
-	out, _ := runCommand("iptables", "-S", "INPUT")
+	inputRules, _ := runCommand("iptables", "-S", "INPUT")
+	outputRules, _ := runCommand("iptables", "-S", "OUTPUT")
 	missing := []string{}
 	for _, port := range ports {
 		for _, proto := range []string{"tcp", "udp"} {
-			if !iptablesHasDrop(out, port, proto) {
-				missing = append(missing, fmt.Sprintf("%d/%s", port, proto))
+			if !iptablesHasDrop(inputRules, port, proto) {
+				missing = append(missing, fmt.Sprintf("%d/%s(in)", port, proto))
+			}
+			if !iptablesHasDrop(outputRules, port, proto) {
+				missing = append(missing, fmt.Sprintf("%d/%s(out)", port, proto))
 			}
 		}
 	}
@@ -619,20 +636,27 @@ func checkNftBlocks(ports []int) (string, []string) {
 	missing := []string{}
 	for _, port := range ports {
 		for _, proto := range []string{"tcp", "udp"} {
-			if !nftHasDrop(out, port, proto) {
-				missing = append(missing, fmt.Sprintf("%d/%s", port, proto))
+			if !nftHasDrop(out, port, proto, "in") {
+				missing = append(missing, fmt.Sprintf("%d/%s(in)", port, proto))
+			}
+			if !nftHasDrop(out, port, proto, "out") {
+				missing = append(missing, fmt.Sprintf("%d/%s(out)", port, proto))
 			}
 		}
 	}
 	return "nftables", dedupeStrings(missing)
 }
 
-func nftHasDrop(rules string, port int, proto string) bool {
+func nftHasDrop(rules string, port int, proto string, direction string) bool {
+	chainHint := "input"
+	if direction == "out" {
+		chainHint = "output"
+	}
 	patterns := []string{
-		fmt.Sprintf(`%s dport %d .* drop`, proto, port),
-		fmt.Sprintf(`%s dport %d .* reject`, proto, port),
-		fmt.Sprintf(`%s dport \\{[^}]*%d[^}]*\\} .* drop`, proto, port),
-		fmt.Sprintf(`%s dport \\{[^}]*%d[^}]*\\} .* reject`, proto, port),
+		fmt.Sprintf(`(?s)chain %s.*%s dport %d .* drop`, chainHint, proto, port),
+		fmt.Sprintf(`(?s)chain %s.*%s dport %d .* reject`, chainHint, proto, port),
+		fmt.Sprintf(`(?s)chain %s.*%s dport \\{[^}]*%d[^}]*\\} .* drop`, chainHint, proto, port),
+		fmt.Sprintf(`(?s)chain %s.*%s dport \\{[^}]*%d[^}]*\\} .* reject`, chainHint, proto, port),
 	}
 	for _, p := range patterns {
 		re := regexp.MustCompile(p)
@@ -646,8 +670,10 @@ func nftHasDrop(rules string, port int, proto string) bool {
 func portsToProtoList(ports []int) []string {
 	list := []string{}
 	for _, port := range ports {
-		list = append(list, fmt.Sprintf("%d/tcp", port))
-		list = append(list, fmt.Sprintf("%d/udp", port))
+		list = append(list, fmt.Sprintf("%d/tcp(in)", port))
+		list = append(list, fmt.Sprintf("%d/udp(in)", port))
+		list = append(list, fmt.Sprintf("%d/tcp(out)", port))
+		list = append(list, fmt.Sprintf("%d/udp(out)", port))
 	}
 	return list
 }
@@ -1122,11 +1148,11 @@ func manualFixHint(id string) string {
 	case "ftp_service":
 		return "systemctl stop vsftpd && systemctl disable vsftpd"
 	case "risky_ports":
-		return "参见防火墙封禁说明（firewalld/nft/iptables）"
+		return firewallFixHint()
 	case "ipv6_disabled":
 		return "sysctl -w net.ipv6.conf.all.disable_ipv6=1 ..."
 	case "patch_updates":
-		return "apt-get update && apt-get upgrade / dnf update / yum update"
+		return patchFixHint()
 	case "password_policy":
 		return "编辑 /etc/login.defs 与 PAM 配置（minlen/minclass）"
 	case "guest_user":
@@ -1138,4 +1164,74 @@ func manualFixHint(id string) string {
 	default:
 		return ""
 	}
+}
+
+func detectOSInfo() OSInfo {
+	data, err := os.ReadFile("/etc/os-release")
+	if err != nil {
+		return OSInfo{}
+	}
+	info := OSInfo{}
+	lines := strings.Split(string(data), "\n")
+	for _, line := range lines {
+		if strings.HasPrefix(line, "ID=") {
+			info.ID = trimOSValue(line)
+		} else if strings.HasPrefix(line, "NAME=") {
+			info.Name = trimOSValue(line)
+		} else if strings.HasPrefix(line, "VERSION_ID=") {
+			info.Version = trimOSValue(line)
+		} else if strings.HasPrefix(line, "PRETTY_NAME=") {
+			info.Pretty = trimOSValue(line)
+		} else if strings.HasPrefix(line, "ID_LIKE=") {
+			info.IDLike = trimOSValue(line)
+		}
+	}
+	return info
+}
+
+func trimOSValue(line string) string {
+	parts := strings.SplitN(line, "=", 2)
+	if len(parts) != 2 {
+		return ""
+	}
+	return strings.Trim(parts[1], "\"")
+}
+
+func patchFixHint() string {
+	switch detectPkgManager() {
+	case "apt":
+		return "apt-get update && apt-get upgrade"
+	case "dnf":
+		return "dnf update"
+	case "yum":
+		return "yum update"
+	default:
+		return "根据系统包管理器执行更新（apt/dnf/yum）"
+	}
+}
+
+func detectPkgManager() string {
+	if commandExists("apt-get") {
+		return "apt"
+	}
+	if commandExists("dnf") {
+		return "dnf"
+	}
+	if commandExists("yum") {
+		return "yum"
+	}
+	return ""
+}
+
+func firewallFixHint() string {
+	if commandExists("firewall-cmd") {
+		return "firewalld：in/out 规则（参见README示例）"
+	}
+	if commandExists("nft") {
+		return "nftables：input/output 链封禁 dport"
+	}
+	if commandExists("iptables") {
+		return "iptables：INPUT/OUTPUT 链 DROP/REJECT"
+	}
+	return "未检测到防火墙组件，请联系管理员"
 }
