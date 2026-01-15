@@ -10,7 +10,7 @@
 运行说明
 - 检查无需 root 权限
 - 设置项需要 root 权限（sudo）
-- 无需安装图形组件，双击会自动打开终端交互
+- 无需安装图形组件，双击会自动打开终端交互（若未执行请先赋予执行权限）
 - 程序会根据系统版本/组件自动选择包管理器与防火墙检测方式
 
 构建（Go 静态单文件）
@@ -47,17 +47,14 @@ GOOS=linux ./build.sh
 1) 将以下文件放在同一目录
    - xc-baseline-go-amd64
    - xc-baseline-go-arm64
-   - run_gui.sh
-2) 双击 run_gui.sh
+   - run.sh
+2) 双击 run.sh
    - 回车：立即检查
    - 输入数字：检查/修复/查看项等
-   - 若无法打开终端，将把结果保存到桌面文件
-3) 可选：生成桌面快捷方式
-   ./install_desktop.sh
-
-桌面快捷方式模板
-如需手工编辑请参考：
-xc-baseline.desktop
+3) 若双击无反应，请先执行：
+   chmod +x run.sh
+4) 如遇 AT-SPI 警告（mate-terminal 打印提示）可忽略，不影响执行
+5) 运行将强制在当前终端交互
 
 手动修复参考（高危端口封禁）
 按防火墙类型操作：
@@ -147,3 +144,5 @@ xc-baseline.desktop
   /org/gnome/desktop/screensaver/lock-enabled
   /org/gnome/desktop/screensaver/lock-delay
 - 执行：dconf update
+
+which mate-terminal gnome-terminal x-terminal-emulator konsole deepin-terminal ukui-terminal xfce4-terminal xterm

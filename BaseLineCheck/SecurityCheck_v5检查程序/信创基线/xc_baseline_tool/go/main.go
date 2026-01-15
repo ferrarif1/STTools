@@ -764,15 +764,34 @@ func checkPasswordPolicy() Result {
 	if err != nil {
 		return Result{Status: "manual", Current: "缺少/etc/login.defs"}
 	}
-	maxDays := parseLoginDefs(string(data), "PASS_MAX_DAYS")
-	minDays := parseLoginDefs(string(data), "PASS_MIN_DAYS")
-	minLen := parseLoginDefs(string(data), "PASS_MIN_LEN")
+	maxDays := parseLoginDefsAny(string(data), []string{"PASS_MAX_DAYS", "MAX_DAYS", "MAX"})
+	minDays := parseLoginDefsAny(string(data), []string{"PASS_MIN_DAYS", "MIN_DAYS", "MIN"})
+	minLen := parseLoginDefsAny(string(data), []string{"PASS_MIN_LEN", "MIN_LEN", "LEN"})
+	pwqMinLen := ""
+	pwqMinClass := ""
+	if minLen == "" {
+		pwqMinLen, pwqMinClass = readPwqualityConfig()
+	}
 	pamFile := "/etc/pam.d/system-auth"
 	if _, err := os.Stat("/etc/pam.d/common-password"); err == nil {
 		pamFile = "/etc/pam.d/common-password"
 	}
 	pamData, _ := os.ReadFile(pamFile)
-	pwquality := strings.Contains(string(pamData), "pam_pwquality.so") || strings.Contains(string(pamData), "pam_cracklib.so")
+	pamContent := string(pamData)
+	pwquality := strings.Contains(pamContent, "pam_pwquality.so") || strings.Contains(pamContent, "pam_cracklib.so")
+	if minLen == "" && pwqMinLen == "" {
+		if val := parsePamValue(pamContent, "minlen"); val != "" {
+			pwqMinLen = val
+		}
+	}
+	if pwqMinClass == "" {
+		if val := parsePamValue(pamContent, "minclass"); val != "" {
+			pwqMinClass = val
+		}
+	}
+	if minLen == "" {
+		minLen = pwqMinLen
+	}
 
 	status := "pass"
 	issues := []string{}
@@ -788,11 +807,14 @@ func checkPasswordPolicy() Result {
 		status = "fail"
 		issues = append(issues, "PASS_MIN_LEN")
 	}
-	if !pwquality {
+	if !pwquality || (pwqMinClass != "" && toInt(pwqMinClass) < 3) {
 		status = "fail"
 		issues = append(issues, "PAM复杂度")
 	}
 	current := fmt.Sprintf("MAX=%s, MIN=%s, LEN=%s, PAM=%s", valueOrNA(maxDays), valueOrNA(minDays), valueOrNA(minLen), boolToStr(pwquality))
+	if pwqMinClass != "" {
+		current += fmt.Sprintf(", MINCLASS=%s", pwqMinClass)
+	}
 	if len(issues) > 0 {
 		current += " | 缺失: " + strings.Join(issues, ", ")
 	}
@@ -806,6 +828,95 @@ func parseLoginDefs(data, key string) string {
 		return match[1]
 	}
 	return ""
+}
+
+func parseLoginDefsAny(data string, keys []string) string {
+	for _, key := range keys {
+		if value := parseLoginDefs(data, key); value != "" {
+			return value
+		}
+	}
+	return ""
+}
+
+func loginDefsKeys(content string) (string, string, string) {
+	if content == "" {
+		return "PASS_MAX_DAYS", "PASS_MIN_DAYS", "PASS_MIN_LEN"
+	}
+	if regexp.MustCompile(`(?m)^PASS_MAX_DAYS\b`).MatchString(content) {
+		return "PASS_MAX_DAYS", "PASS_MIN_DAYS", "PASS_MIN_LEN"
+	}
+	maxKey := firstMatchKey(content, []string{"MAX_DAYS", "MAX"})
+	minKey := firstMatchKey(content, []string{"MIN_DAYS", "MIN"})
+	lenKey := firstMatchKey(content, []string{"MIN_LEN", "LEN"})
+	if maxKey == "" {
+		maxKey = "PASS_MAX_DAYS"
+	}
+	if minKey == "" {
+		minKey = "PASS_MIN_DAYS"
+	}
+	if lenKey == "" {
+		lenKey = "PASS_MIN_LEN"
+	}
+	return maxKey, minKey, lenKey
+}
+
+func firstMatchKey(content string, keys []string) string {
+	for _, key := range keys {
+		if regexp.MustCompile(`(?m)^` + regexp.QuoteMeta(key) + `\b`).MatchString(content) {
+			return key
+		}
+	}
+	return ""
+}
+
+func readPwqualityConfig() (string, string) {
+	content, err := os.ReadFile("/etc/security/pwquality.conf")
+	if err != nil {
+		return "", ""
+	}
+	lines := strings.Split(string(content), "\n")
+	minlen := ""
+	minclass := ""
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		parts := strings.SplitN(line, "=", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		key := strings.TrimSpace(parts[0])
+		val := strings.TrimSpace(parts[1])
+		switch key {
+		case "minlen":
+			minlen = val
+		case "minclass":
+			minclass = val
+		}
+	}
+	return minlen, minclass
+}
+
+func parsePamValue(content, key string) string {
+	re := regexp.MustCompile(key + `=([0-9]+)`)
+	match := re.FindStringSubmatch(content)
+	if len(match) == 2 {
+		return match[1]
+	}
+	return ""
+}
+
+func ensurePwqualityConfig(minlen, minclass string) error {
+	path := "/etc/security/pwquality.conf"
+	if err := replaceOrAppendKV(path, "minlen", minlen, true); err != nil {
+		return err
+	}
+	if err := replaceOrAppendKV(path, "minclass", minclass, true); err != nil {
+		return err
+	}
+	return nil
 }
 
 func checkGuestUser() Result {
@@ -868,7 +979,7 @@ func checkLockScreen() Result {
 	config := "/etc/dconf/db/local.d/00-xc-baseline"
 	data, err := os.ReadFile(config)
 	if err != nil {
-		return Result{Status: "manual", Current: "未发现dconf配置"}
+		return checkLockScreenGsettings()
 	}
 	content := string(data)
 	lockEnabled := strings.Contains(content, "lock-enabled=true")
@@ -878,6 +989,10 @@ func checkLockScreen() Result {
 	lockDelayNum, lockOK := parseTrailingInt(lockDelayRaw)
 	if lockEnabled && idleOK && idleDelayNum <= 900 && lockOK && lockDelayNum == 0 {
 		return Result{Status: "pass", Current: fmt.Sprintf("lock-enabled=true, idle-delay=%s, lock-delay=%s", valueOrNA(idleDelayRaw), valueOrNA(lockDelayRaw))}
+	}
+	fallback := checkLockScreenGsettings()
+	if fallback.Status != "manual" {
+		return fallback
 	}
 	return Result{Status: "fail", Current: fmt.Sprintf("lock-enabled=%t, idle-delay=%s, lock-delay=%s", lockEnabled, valueOrNA(idleDelayRaw), valueOrNA(lockDelayRaw))}
 }
@@ -900,6 +1015,44 @@ func parseTrailingInt(s string) (int, bool) {
 	return 0, false
 }
 
+func checkLockScreenGsettings() Result {
+	if !commandExists("gsettings") {
+		return Result{Status: "manual", Current: "未发现dconf配置"}
+	}
+	type schemaSet struct {
+		SessionSchema string
+		ScreensSchema string
+	}
+	candidates := []schemaSet{
+		{SessionSchema: "org.gnome.desktop.session", ScreensSchema: "org.gnome.desktop.screensaver"},
+		{SessionSchema: "org.ukui.session", ScreensSchema: "org.ukui.screensaver"},
+	}
+	for _, cand := range candidates {
+		idleRaw, okIdle := gsettingsGet(cand.SessionSchema, "idle-delay")
+		lockEnabledRaw, okLock := gsettingsGet(cand.ScreensSchema, "lock-enabled")
+		lockDelayRaw, okDelay := gsettingsGet(cand.ScreensSchema, "lock-delay")
+		if !okIdle || !okLock || !okDelay {
+			continue
+		}
+		idleNum, idleOK := parseTrailingInt(idleRaw)
+		lockDelayNum, lockOK := parseTrailingInt(lockDelayRaw)
+		lockEnabled := strings.TrimSpace(lockEnabledRaw) == "true"
+		if lockEnabled && idleOK && idleNum <= 900 && lockOK && lockDelayNum == 0 {
+			return Result{Status: "pass", Current: fmt.Sprintf("lock-enabled=true, idle-delay=%s, lock-delay=%s", valueOrNA(idleRaw), valueOrNA(lockDelayRaw))}
+		}
+		return Result{Status: "fail", Current: fmt.Sprintf("lock-enabled=%t, idle-delay=%s, lock-delay=%s", lockEnabled, valueOrNA(idleRaw), valueOrNA(lockDelayRaw))}
+	}
+	return Result{Status: "manual", Current: "未发现dconf配置"}
+}
+
+func gsettingsGet(schema, key string) (string, bool) {
+	out, code := runCommand("gsettings", "get", schema, key)
+	if code != 0 {
+		return "", false
+	}
+	return strings.TrimSpace(out), true
+}
+
 func applyFTPService() error {
 	services := []string{"vsftpd", "proftpd", "pure-ftpd", "ftpd"}
 	for _, svc := range services {
@@ -916,25 +1069,41 @@ func applyFTPService() error {
 func applyIPv6Disabled() error {
 	path := "/etc/sysctl.d/99-xc-baseline.conf"
 	lines := readLines(path)
-	lines = upsertKV(lines, "net.ipv6.conf.all.disable_ipv6", "1")
-	lines = upsertKV(lines, "net.ipv6.conf.default.disable_ipv6", "1")
-	lines = upsertKV(lines, "net.ipv6.conf.lo.disable_ipv6", "1")
+	lines = upsertKVAllowComment(lines, "net.ipv6.conf.all.disable_ipv6", "1", false)
+	lines = upsertKVAllowComment(lines, "net.ipv6.conf.default.disable_ipv6", "1", false)
+	lines = upsertKVAllowComment(lines, "net.ipv6.conf.lo.disable_ipv6", "1", false)
 	if err := writeLines(path, lines); err != nil {
 		return err
 	}
 	if commandExists("sysctl") {
 		_, _ = runCommand("sysctl", "-p", path)
+		_, _ = runCommand("sysctl", "-w", "net.ipv6.conf.all.disable_ipv6=1")
+		_, _ = runCommand("sysctl", "-w", "net.ipv6.conf.default.disable_ipv6=1")
+		_, _ = runCommand("sysctl", "-w", "net.ipv6.conf.lo.disable_ipv6=1")
+		_, _ = runCommand("sysctl", "--system")
 	}
+	writeProcValue("/proc/sys/net/ipv6/conf/all/disable_ipv6", "1")
+	writeProcValue("/proc/sys/net/ipv6/conf/default/disable_ipv6", "1")
+	writeProcValue("/proc/sys/net/ipv6/conf/lo/disable_ipv6", "1")
 	return nil
 }
 
 func applyPasswordPolicy() error {
 	loginDefs := "/etc/login.defs"
-	lines := readLines(loginDefs)
-	lines = upsertKV(lines, "PASS_MAX_DAYS", "90")
-	lines = upsertKV(lines, "PASS_MIN_DAYS", "1")
-	lines = upsertKV(lines, "PASS_MIN_LEN", "8")
-	if err := writeLines(loginDefs, lines); err != nil {
+	content := readFile(loginDefs)
+	maxKey, minKey, lenKey := loginDefsKeys(content)
+	if err := replaceOrAppendKV(loginDefs, maxKey, "90", false); err != nil {
+		return err
+	}
+	if err := replaceOrAppendKV(loginDefs, minKey, "1", false); err != nil {
+		return err
+	}
+	if err := replaceOrAppendKV(loginDefs, lenKey, "8", false); err != nil {
+		return err
+	}
+
+	// Some Kylin builds honor pwquality.conf over PASS_MIN_LEN.
+	if err := ensurePwqualityConfig("8", "3"); err != nil {
 		return err
 	}
 
@@ -1044,7 +1213,11 @@ func upsertKV(lines []string, key, value string) []string {
 	for i, line := range lines {
 		trim := strings.TrimSpace(line)
 		if strings.HasPrefix(trim, key) {
-			lines[i] = fmt.Sprintf("%s   %s", key, value)
+			sep := "   "
+			if strings.Contains(trim, "=") {
+				sep = " = "
+			}
+			lines[i] = fmt.Sprintf("%s%s%s", key, sep, value)
 			found = true
 		}
 	}
@@ -1052,6 +1225,59 @@ func upsertKV(lines []string, key, value string) []string {
 		lines = append(lines, fmt.Sprintf("%s   %s", key, value))
 	}
 	return lines
+}
+
+func upsertKVAllowComment(lines []string, key, value string, useEquals bool) []string {
+	found := false
+	for i, line := range lines {
+		trim := strings.TrimSpace(line)
+		trim = strings.TrimPrefix(trim, "#")
+		trim = strings.TrimSpace(trim)
+		if strings.HasPrefix(trim, key) {
+			sep := "   "
+			if useEquals || strings.Contains(line, "=") {
+				sep = " = "
+			}
+			lines[i] = fmt.Sprintf("%s%s%s", key, sep, value)
+			found = true
+		}
+	}
+	if !found {
+		sep := "   "
+		if useEquals {
+			sep = " = "
+		}
+		lines = append(lines, fmt.Sprintf("%s%s%s", key, sep, value))
+	}
+	return lines
+}
+
+func writeProcValue(path, value string) {
+	_ = os.WriteFile(path, []byte(value), 0644)
+}
+
+func replaceOrAppendKV(path, key, value string, useEquals bool) error {
+	lines := readLines(path)
+	re := regexp.MustCompile(`(?i)^\s*#?\s*` + regexp.QuoteMeta(key) + `\b.*`)
+	replaced := false
+	for i, line := range lines {
+		if re.MatchString(line) {
+			sep := "   "
+			if useEquals || strings.Contains(line, "=") {
+				sep = " = "
+			}
+			lines[i] = fmt.Sprintf("%s%s%s", key, sep, value)
+			replaced = true
+		}
+	}
+	if !replaced {
+		sep := "   "
+		if useEquals {
+			sep = " = "
+		}
+		lines = append(lines, fmt.Sprintf("%s%s%s", key, sep, value))
+	}
+	return writeLines(path, lines)
 }
 
 func readFile(path string) string {
