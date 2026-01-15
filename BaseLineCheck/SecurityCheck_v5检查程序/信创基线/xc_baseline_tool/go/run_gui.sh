@@ -23,43 +23,67 @@ if [ ! -x "$BIN" ]; then
   exit 1
 fi
 
-have_zenity=false
-have_kdialog=false
-command -v zenity >/dev/null 2>&1 && have_zenity=true
-command -v kdialog >/dev/null 2>&1 && have_kdialog=true
-
 show_message() {
-  local msg="$1"
-  if $have_zenity; then
-    zenity --info --title="信创基线" --text="$msg" >/dev/null 2>&1 || true
-  elif $have_kdialog; then
-    kdialog --msgbox "$msg" >/dev/null 2>&1 || true
-  else
-    echo "$msg"
-  fi
+  echo "$1"
 }
 
-show_result() {
-  local content="$1"
-  if $have_zenity; then
-    printf "%s" "$content" | zenity --text-info --title="检查结果" --width=900 --height=600 >/dev/null 2>&1 || true
-  elif $have_kdialog; then
-    local tmp
-    tmp=$(mktemp)
-    printf "%s" "$content" > "$tmp"
-    kdialog --textbox "$tmp" 900 600 >/dev/null 2>&1 || true
-    rm -f "$tmp"
-  else
-    echo "$content"
+launch_terminal() {
+  local cmd="$1"
+  if command -v x-terminal-emulator >/dev/null 2>&1; then
+    x-terminal-emulator -e bash -lc "$cmd"
+    return
   fi
+  if command -v gnome-terminal >/dev/null 2>&1; then
+    gnome-terminal -- bash -lc "$cmd"
+    return
+  fi
+  if command -v konsole >/dev/null 2>&1; then
+    konsole -e bash -lc "$cmd"
+    return
+  fi
+  if command -v deepin-terminal >/dev/null 2>&1; then
+    deepin-terminal -e bash -lc "$cmd"
+    return
+  fi
+  if command -v ukui-terminal >/dev/null 2>&1; then
+    ukui-terminal -e bash -lc "$cmd"
+    return
+  fi
+  if command -v xfce4-terminal >/dev/null 2>&1; then
+    xfce4-terminal -e bash -lc "$cmd"
+    return
+  fi
+  if command -v xterm >/dev/null 2>&1; then
+    xterm -e bash -lc "$cmd"
+    return
+  fi
+  return 1
 }
 
-run_check() {
-  local output
-  output=$("$BIN" --check 2>&1 || true)
-  if $have_zenity || $have_kdialog; then
-    show_result "$output"
-  else
+run_menu() {
+  local cmd
+  cmd=$'echo \"信创基线工具\";\\\n'\
+$'echo \"-----------------------------\";\\\n'\
+$'echo \"回车: 立即检查\";\\\n'\
+$'echo \"1) 检查并按提示修复\";\\\n'\
+$'echo \"2) 仅检查\";\\\n'\
+$'echo \"3) 查看检查项\";\\\n'\
+$'echo \"0) 退出\";\\\n'\
+$'echo -n \"请选择: \"; read -r choice;\\\n'\
+$'case \"$choice\" in\\\n'\
+$'  \"\") '$BIN' --check ;;\\\n'\
+$'  1) '$BIN' --check-fix ;;\\\n'\
+$'  2) '$BIN' --check ;;\\\n'\
+$'  3) '$BIN' --list ;;\\\n'\
+$'  0) exit 0 ;;\\\n'\
+$'  *) echo \"无效选择\" ;;\\\n'\
+$'esac;\\\n'\
+$'echo; read -r -p \"按回车关闭...\" _'
+
+  if ! launch_terminal "$cmd"; then
+    show_message "未检测到终端模拟器，无法交互。将仅保存检查结果。"
+    local output
+    output=$("$BIN" --check 2>&1 || true)
     local ts
     ts=$(date +"%Y%m%d_%H%M%S" 2>/dev/null || echo "result")
     local result_file="$HOME/Desktop/基线检查结果_${ts}.txt"
@@ -71,38 +95,4 @@ run_check() {
   fi
 }
 
-confirm_repair() {
-  if $have_zenity; then
-    if zenity --question --title="信创基线" --text="检查已完成。是否进行修复（应用全部可设置项）？" 2>/dev/null; then
-      echo "y"
-    else
-      echo "n"
-    fi
-  elif $have_kdialog; then
-    if kdialog --yesno "检查已完成。是否进行修复（应用全部可设置项）？" 2>/dev/null; then
-      echo "y"
-    else
-      echo "n"
-    fi
-  else
-    echo "n"
-  fi
-}
-
-run_apply_all() {
-  if command -v pkexec >/dev/null 2>&1; then
-    pkexec "$BIN" --apply-all --ui || true
-  else
-    show_message "未检测到pkexec，无法自动提权。请联系管理员运行。"
-  fi
-}
-
-if ! $have_zenity && ! $have_kdialog; then
-  show_message "未检测到图形组件(zenity/kdialog)。将保存检查结果到桌面。"
-fi
-
-run_check
-repair=$(confirm_repair)
-if [ "$repair" = "y" ]; then
-  run_apply_all
-fi
+run_menu

@@ -45,22 +45,15 @@ type Output struct {
 	Items []OutputItem `json:"items"`
 }
 
-type UIInfo struct {
-	Desktop string
-	Display string
-	Backend string
-}
-
 func main() {
 	var (
 		flagCheck    = flag.Bool("check", false, "执行全部基线检查")
 		flagApply    = flag.String("apply", "", "应用指定基线项")
 		flagApplyAll = flag.Bool("apply-all", false, "应用所有可设置项")
+		flagCheckFix = flag.Bool("check-fix", false, "检查后按提示修复失败项")
 		flagList     = flag.Bool("list", false, "列出基线项")
 		flagJSON     = flag.Bool("json", false, "JSON输出")
 		flagOutput   = flag.String("output", "", "输出到文件")
-		flagUI       = flag.Bool("ui", false, "启用原生图形交互")
-		flagUIInfo   = flag.Bool("ui-info", false, "输出桌面环境与UI组件检测结果")
 	)
 	flag.Parse()
 
@@ -70,14 +63,6 @@ func main() {
 	}
 
 	items := buildItems()
-
-	if *flagUIInfo {
-		info := detectUI()
-		fmt.Printf("desktop=%s\n", info.Desktop)
-		fmt.Printf("display=%s\n", info.Display)
-		fmt.Printf("ui_backend=%s\n", info.Backend)
-		return
-	}
 
 	if *flagList {
 		for _, item := range items {
@@ -91,6 +76,14 @@ func main() {
 		return
 	}
 
+	if *flagCheckFix {
+		if err := checkAndRepair(items); err != nil {
+			fmt.Fprintln(os.Stderr, err.Error())
+			os.Exit(1)
+		}
+		return
+	}
+
 	if *flagApply != "" {
 		if err := applyOne(items, *flagApply); err != nil {
 			fmt.Fprintln(os.Stderr, err.Error())
@@ -100,7 +93,7 @@ func main() {
 	}
 
 	if *flagApplyAll {
-		if err := applyAll(items, *flagUI); err != nil {
+		if err := applyAll(items); err != nil {
 			fmt.Fprintln(os.Stderr, err.Error())
 			os.Exit(1)
 		}
@@ -113,10 +106,10 @@ func main() {
 func printHelp() {
 	fmt.Println("用法:")
 	fmt.Println("  xc-baseline-go --check [--json] [--output FILE]")
+	fmt.Println("  xc-baseline-go --check-fix")
 	fmt.Println("  xc-baseline-go --apply ITEM_ID")
-	fmt.Println("  xc-baseline-go --apply-all [--ui]")
+	fmt.Println("  xc-baseline-go --apply-all")
 	fmt.Println("  xc-baseline-go --list")
-	fmt.Println("  xc-baseline-go --ui-info")
 }
 
 func buildItems() []Item {
@@ -249,9 +242,92 @@ func runCheck(items []Item, jsonOut bool, outputFile string) {
 
 	fmt.Fprintf(out, "系统识别: %s\n\n", readOSRelease())
 	for _, item := range results {
-		fmt.Fprintf(out, "[%s] %s\n- 结果: %s\n- 当前: %s\n- 期望: %s\n\n",
-			item.ID, item.Name, item.Status, item.Current, item.Expected)
+		name := item.Name
+		if item.Status == "fail" {
+			name = colorize("red", name)
+		}
+		fmt.Fprintf(out, "[%s] %s\n- 结果: %s\n- 当前: %s\n- 期望: %s\n",
+			item.ID, name, item.Status, item.Current, item.Expected)
+		if item.Status == "fail" {
+			if hint := manualFixHint(item.ID); hint != "" {
+				fmt.Fprintf(out, "- 手动修复参考: %s\n", hint)
+			}
+		}
+		fmt.Fprintln(out)
 	}
+}
+
+func checkAndRepair(items []Item) error {
+	if os.Geteuid() != 0 {
+		return errors.New("需要root权限执行设置操作")
+	}
+
+	results := make(map[string]Result, len(items))
+	for _, item := range items {
+		results[item.ID] = item.CheckFunc()
+	}
+
+	failItems := []Item{}
+	for _, item := range items {
+		res := results[item.ID]
+		if res.Status == "fail" && item.CanApply && item.ApplyFunc != nil {
+			failItems = append(failItems, item)
+		}
+	}
+
+	if len(failItems) == 0 {
+		fmt.Println("未发现需要修复的基线项。")
+		return nil
+	}
+
+	fmt.Println("需要修复的基线项：")
+	for _, item := range failItems {
+		fmt.Printf("- %s (%s)\n", colorize("red", item.Name), item.ID)
+		hint := manualFixHint(item.ID)
+		if hint != "" {
+			fmt.Printf("  手动修复参考：%s\n", hint)
+		}
+	}
+	fmt.Println()
+
+	reader := bufio.NewReader(os.Stdin)
+	applyRest := false
+
+	for _, item := range failItems {
+		if applyRest {
+			_ = item.ApplyFunc()
+			continue
+		}
+
+		for {
+			fmt.Printf("是否修复[%s] %s ? (y/n/all): ", item.ID, item.Name)
+			input, _ := reader.ReadString('\n')
+			answer := strings.TrimSpace(input)
+			switch strings.ToLower(answer) {
+			case "y":
+				_ = item.ApplyFunc()
+				goto nextItem
+			case "n":
+				goto nextItem
+			case "all":
+				fmt.Print("确认要对剩余所有可设置项执行吗？(y/n): ")
+				input, _ := reader.ReadString('\n')
+				confirm := strings.TrimSpace(input)
+				if strings.EqualFold(confirm, "y") {
+					applyRest = true
+					_ = item.ApplyFunc()
+				}
+				goto nextItem
+			default:
+				fmt.Println("请输入 y / n / all")
+			}
+		}
+
+	nextItem:
+	}
+
+	fmt.Println("修复流程已完成。")
+	return nil
 }
 
 func applyOne(items []Item, id string) error {
@@ -272,19 +348,11 @@ func applyOne(items []Item, id string) error {
 	return nil
 }
 
-func applyAll(items []Item, useUI bool) error {
+func applyAll(items []Item) error {
 	if os.Geteuid() != 0 {
 		return errors.New("需要root权限执行设置操作")
 	}
 	applyRest := false
-	ui := UIInfo{}
-	if useUI {
-		ui = detectUI()
-		if ui.Backend == "" {
-			fmt.Println("未检测到可用图形界面组件，将使用命令行交互。")
-			useUI = false
-		}
-	}
 	reader := bufio.NewReader(os.Stdin)
 
 	for _, item := range items {
@@ -297,14 +365,9 @@ func applyAll(items []Item, useUI bool) error {
 		}
 
 		for {
-			answer := ""
-			if useUI {
-				answer = uiPromptAction(ui, item)
-			} else {
-				fmt.Printf("是否应用[%s] %s ? (y/n/all): ", item.ID, item.Name)
-				input, _ := reader.ReadString('\n')
-				answer = strings.TrimSpace(input)
-			}
+			fmt.Printf("是否应用[%s] %s ? (y/n/all): ", item.ID, item.Name)
+			input, _ := reader.ReadString('\n')
+			answer := strings.TrimSpace(input)
 			switch strings.ToLower(answer) {
 			case "y":
 				_ = item.ApplyFunc()
@@ -312,23 +375,16 @@ func applyAll(items []Item, useUI bool) error {
 			case "n":
 				goto nextItem
 			case "all":
-				confirm := "n"
-				if useUI {
-					confirm = uiConfirmAll(ui)
-				} else {
-					fmt.Print("确认要对剩余所有可设置项执行吗？(y/n): ")
-					input, _ := reader.ReadString('\n')
-					confirm = strings.TrimSpace(input)
-				}
+				fmt.Print("确认要对剩余所有可设置项执行吗？(y/n): ")
+				input, _ := reader.ReadString('\n')
+				confirm := strings.TrimSpace(input)
 				if strings.EqualFold(confirm, "y") {
 					applyRest = true
 					_ = item.ApplyFunc()
 				}
 				goto nextItem
 			default:
-				if !useUI {
-					fmt.Println("请输入 y / n / all")
-				}
+				fmt.Println("请输入 y / n / all")
 			}
 		}
 
@@ -429,14 +485,29 @@ func checkRiskyPorts() Result {
 			opened = append(opened, p)
 		}
 	}
-	if len(opened) == 0 {
-		return Result{Status: "pass", Current: "无高危端口监听"}
+	firewallStatus, missingBlocks := checkFirewallBlocks(risky)
+	status := "pass"
+	details := []string{}
+	if len(opened) > 0 {
+		status = "fail"
+		parts := []string{}
+		for _, p := range opened {
+			parts = append(parts, fmt.Sprintf("%d", p))
+		}
+		details = append(details, "监听端口: "+strings.Join(parts, ", "))
+	} else {
+		details = append(details, "无高危端口监听")
 	}
-	parts := []string{}
-	for _, p := range opened {
-		parts = append(parts, fmt.Sprintf("%d", p))
+	if firewallStatus == "absent" {
+		status = "fail"
+		details = append(details, "防火墙未启用")
+	} else if len(missingBlocks) > 0 {
+		status = "fail"
+		details = append(details, "未封禁: "+strings.Join(missingBlocks, ", "))
+	} else {
+		details = append(details, "高危端口已配置封禁策略")
 	}
-	return Result{Status: "fail", Current: "监听端口: " + strings.Join(parts, ", ")}
+	return Result{Status: status, Current: strings.Join(details, " | ")}
 }
 
 func parseListeningPorts(output string) map[int]bool {
@@ -453,6 +524,145 @@ func parseListeningPorts(output string) map[int]bool {
 		}
 	}
 	return ports
+}
+
+func checkFirewallBlocks(ports []int) (string, []string) {
+	if commandExists("firewall-cmd") && isServiceActive("firewalld") {
+		return checkFirewalldBlocks(ports)
+	}
+	if commandExists("nft") {
+		return checkNftBlocks(ports)
+	}
+	if commandExists("iptables") {
+		return checkIptablesBlocks(ports)
+	}
+	return "absent", portsToProtoList(ports)
+}
+
+func isServiceActive(service string) bool {
+	if !commandExists("systemctl") {
+		return false
+	}
+	out, code := runCommand("systemctl", "is-active", service)
+	return code == 0 && strings.TrimSpace(out) == "active"
+}
+
+func checkFirewalldBlocks(ports []int) (string, []string) {
+	missing := []string{}
+	richRules, _ := runCommand("firewall-cmd", "--list-rich-rules")
+	for _, port := range ports {
+		for _, proto := range []string{"tcp", "udp"} {
+			if firewalldPortAllowed(port, proto) {
+				missing = append(missing, fmt.Sprintf("%d/%s", port, proto))
+				continue
+			}
+			if !firewalldHasDenyRule(richRules, port, proto) {
+				missing = append(missing, fmt.Sprintf("%d/%s", port, proto))
+			}
+		}
+	}
+	return "firewalld", dedupeStrings(missing)
+}
+
+func firewalldPortAllowed(port int, proto string) bool {
+	out, _ := runCommand("firewall-cmd", "--query-port", fmt.Sprintf("%d/%s", port, proto))
+	return strings.TrimSpace(out) == "yes"
+}
+
+func firewalldHasDenyRule(rules string, port int, proto string) bool {
+	patterns := []string{
+		fmt.Sprintf(`port port="%d" protocol="%s".*reject`, port, proto),
+		fmt.Sprintf(`port port="%d" protocol="%s".*drop`, port, proto),
+		fmt.Sprintf(`port port="%d" protocol="%s".*deny`, port, proto),
+	}
+	for _, p := range patterns {
+		re := regexp.MustCompile(p)
+		if re.MatchString(rules) {
+			return true
+		}
+	}
+	return false
+}
+
+func checkIptablesBlocks(ports []int) (string, []string) {
+	out, _ := runCommand("iptables", "-S", "INPUT")
+	missing := []string{}
+	for _, port := range ports {
+		for _, proto := range []string{"tcp", "udp"} {
+			if !iptablesHasDrop(out, port, proto) {
+				missing = append(missing, fmt.Sprintf("%d/%s", port, proto))
+			}
+		}
+	}
+	return "iptables", dedupeStrings(missing)
+}
+
+func iptablesHasDrop(rules string, port int, proto string) bool {
+	patterns := []string{
+		fmt.Sprintf(`-p %s .*--dport %d .* -j DROP`, proto, port),
+		fmt.Sprintf(`-p %s .*--dport %d .* -j REJECT`, proto, port),
+	}
+	for _, p := range patterns {
+		re := regexp.MustCompile(p)
+		if re.MatchString(rules) {
+			return true
+		}
+	}
+	return false
+}
+
+func checkNftBlocks(ports []int) (string, []string) {
+	out, code := runCommand("nft", "list", "ruleset")
+	if code != 0 {
+		return "nftables", portsToProtoList(ports)
+	}
+	missing := []string{}
+	for _, port := range ports {
+		for _, proto := range []string{"tcp", "udp"} {
+			if !nftHasDrop(out, port, proto) {
+				missing = append(missing, fmt.Sprintf("%d/%s", port, proto))
+			}
+		}
+	}
+	return "nftables", dedupeStrings(missing)
+}
+
+func nftHasDrop(rules string, port int, proto string) bool {
+	patterns := []string{
+		fmt.Sprintf(`%s dport %d .* drop`, proto, port),
+		fmt.Sprintf(`%s dport %d .* reject`, proto, port),
+		fmt.Sprintf(`%s dport \\{[^}]*%d[^}]*\\} .* drop`, proto, port),
+		fmt.Sprintf(`%s dport \\{[^}]*%d[^}]*\\} .* reject`, proto, port),
+	}
+	for _, p := range patterns {
+		re := regexp.MustCompile(p)
+		if re.MatchString(rules) {
+			return true
+		}
+	}
+	return false
+}
+
+func portsToProtoList(ports []int) []string {
+	list := []string{}
+	for _, port := range ports {
+		list = append(list, fmt.Sprintf("%d/tcp", port))
+		list = append(list, fmt.Sprintf("%d/udp", port))
+	}
+	return list
+}
+
+func dedupeStrings(items []string) []string {
+	seen := make(map[string]struct{})
+	out := []string{}
+	for _, item := range items {
+		if _, ok := seen[item]; ok {
+			continue
+		}
+		seen[item] = struct{}{}
+		out = append(out, item)
+	}
+	return out
 }
 
 func checkIPv6Disabled() Result {
@@ -883,90 +1093,49 @@ func boolToStr(value bool) string {
 	return "missing"
 }
 
-func detectUI() UIInfo {
-	info := UIInfo{Desktop: "unknown", Display: "unknown", Backend: ""}
-	desktop := strings.ToLower(os.Getenv("XDG_CURRENT_DESKTOP"))
-	if desktop == "" {
-		desktop = strings.ToLower(os.Getenv("DESKTOP_SESSION"))
+func isTerminal() bool {
+	info, err := os.Stdout.Stat()
+	if err != nil {
+		return false
 	}
-	if desktop == "" {
-		desktop = "unknown"
-	}
-	info.Desktop = desktop
-	if os.Getenv("WAYLAND_DISPLAY") != "" {
-		info.Display = "wayland"
-	} else if os.Getenv("DISPLAY") != "" {
-		info.Display = "x11"
-	} else {
-		info.Display = "none"
-	}
-	if info.Display == "none" {
-		return info
-	}
-	if strings.Contains(desktop, "dde") || strings.Contains(desktop, "ukui") || strings.Contains(desktop, "gnome") {
-		if commandExists("zenity") {
-			info.Backend = "zenity"
-			return info
-		}
-	}
-	if strings.Contains(desktop, "kde") {
-		if commandExists("kdialog") {
-			info.Backend = "kdialog"
-			return info
-		}
-	}
-	if commandExists("zenity") {
-		info.Backend = "zenity"
-	} else if commandExists("kdialog") {
-		info.Backend = "kdialog"
-	}
-	return info
+	return (info.Mode() & os.ModeCharDevice) != 0
 }
 
-func uiPromptAction(info UIInfo, item Item) string {
-	if info.Backend == "zenity" {
-		cmd := exec.Command("zenity", "--list", "--radiolist",
-			"--title=基线设置",
-			"--text=是否应用【"+item.Name+"】\n\n"+item.Desc+"\n\n期望: "+item.Expected,
-			"--column=选择", "--column=操作",
-			"TRUE", "y", "FALSE", "n", "FALSE", "all",
-		)
-		out, err := cmd.Output()
-		if err != nil {
-			return "n"
-		}
-		return strings.TrimSpace(string(out))
+func colorize(color, text string) string {
+	if !isTerminal() {
+		return text
 	}
-	if info.Backend == "kdialog" {
-		cmd := exec.Command("kdialog", "--title", "基线设置",
-			"--radiolist", "是否应用【"+item.Name+"】\n"+item.Desc+"\n期望: "+item.Expected,
-			"y", "应用此项", "on",
-			"n", "跳过此项", "off",
-			"all", "应用剩余全部", "off",
-		)
-		out, err := cmd.Output()
-		if err != nil {
-			return "n"
-		}
-		return strings.TrimSpace(string(out))
+	switch color {
+	case "red":
+		return "\033[31m" + text + "\033[0m"
+	case "yellow":
+		return "\033[33m" + text + "\033[0m"
+	case "green":
+		return "\033[32m" + text + "\033[0m"
+	default:
+		return text
 	}
-	return "n"
 }
 
-func uiConfirmAll(info UIInfo) string {
-	if info.Backend == "zenity" {
-		cmd := exec.Command("zenity", "--question", "--title=确认", "--text=确认要对剩余所有可设置项执行吗？")
-		if err := cmd.Run(); err == nil {
-			return "y"
-		}
-		return "n"
+func manualFixHint(id string) string {
+	switch id {
+	case "ftp_service":
+		return "systemctl stop vsftpd && systemctl disable vsftpd"
+	case "risky_ports":
+		return "参见防火墙封禁说明（firewalld/nft/iptables）"
+	case "ipv6_disabled":
+		return "sysctl -w net.ipv6.conf.all.disable_ipv6=1 ..."
+	case "patch_updates":
+		return "apt-get update && apt-get upgrade / dnf update / yum update"
+	case "password_policy":
+		return "编辑 /etc/login.defs 与 PAM 配置（minlen/minclass）"
+	case "guest_user":
+		return "usermod -L guest && usermod -s /sbin/nologin guest"
+	case "usb_autoplay":
+		return "编辑 /etc/dconf/db/local.d/00-xc-baseline 并执行 dconf update"
+	case "lock_screen":
+		return "设置 idle-delay=uint32 900, lock-enabled=true, lock-delay=uint32 0"
+	default:
+		return ""
 	}
-	if info.Backend == "kdialog" {
-		cmd := exec.Command("kdialog", "--yesno", "确认要对剩余所有可设置项执行吗？")
-		if err := cmd.Run(); err == nil {
-			return "y"
-		}
-		return "n"
-	}
-	return "n"
 }
