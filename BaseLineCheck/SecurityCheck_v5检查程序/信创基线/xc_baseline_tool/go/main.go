@@ -84,27 +84,13 @@ func main() {
 		return
 	}
 
-	if *flagCheckFix {
-		if err := checkAndRepair(items); err != nil {
-			fmt.Fprintln(os.Stderr, err.Error())
-			os.Exit(1)
-		}
+	if *flagApplyAll || *flagCheckFix {
+		fmt.Fprintln(os.Stderr, "自动修复已禁用")
 		return
 	}
 
 	if *flagApply != "" {
-		if err := applyOne(items, *flagApply); err != nil {
-			fmt.Fprintln(os.Stderr, err.Error())
-			os.Exit(1)
-		}
-		return
-	}
-
-	if *flagApplyAll {
-		if err := applyAll(items); err != nil {
-			fmt.Fprintln(os.Stderr, err.Error())
-			os.Exit(1)
-		}
+		fmt.Fprintln(os.Stderr, "自动修复已禁用")
 		return
 	}
 
@@ -114,22 +100,22 @@ func main() {
 func printHelp() {
 	fmt.Println("用法:")
 	fmt.Println("  xc-baseline-go --check [--json] [--output FILE]")
-	fmt.Println("  xc-baseline-go --check-fix")
-	fmt.Println("  xc-baseline-go --apply ITEM_ID")
-	fmt.Println("  xc-baseline-go --apply-all")
+	fmt.Println("  xc-baseline-go --apply ITEM_ID  (已禁用)")
+	fmt.Println("  xc-baseline-go --apply-all      (已禁用)")
+	fmt.Println("  xc-baseline-go --check-fix      (已禁用)")
 	fmt.Println("  xc-baseline-go --list")
 }
 
 func buildItems() []Item {
+	// Baseline catalog: wire checks + auto-fix handlers here.
 	return []Item{
 		{
 			ID:        "ftp_service",
 			Name:      "FTP服务禁用",
 			Desc:      "检查是否存在FTP服务运行，基线要求禁用。",
 			Expected:  "FTP服务未运行且已禁用",
-			CanApply:  true,
+			CanApply:  false,
 			CheckFunc: checkFTPService,
-			ApplyFunc: applyFTPService,
 		},
 		{
 			ID:        "nic_info",
@@ -148,13 +134,20 @@ func buildItems() []Item {
 			CheckFunc: checkRiskyPorts,
 		},
 		{
+			ID:        "usb_autoplay",
+			Name:      "U盘自动播放",
+			Desc:      "检查桌面环境自动挂载/自动打开策略。",
+			Expected:  "自动挂载/自动打开关闭",
+			CanApply:  false,
+			CheckFunc: checkUSBAutoplay,
+		},
+		{
 			ID:        "ipv6_disabled",
 			Name:      "IPv6禁用状态",
 			Desc:      "检查IPv6禁用是否生效。",
 			Expected:  "IPv6已禁用",
-			CanApply:  true,
+			CanApply:  false,
 			CheckFunc: checkIPv6Disabled,
-			ApplyFunc: applyIPv6Disabled,
 		},
 		{
 			ID:        "patch_updates",
@@ -168,45 +161,17 @@ func buildItems() []Item {
 			ID:        "password_policy",
 			Name:      "密码策略",
 			Desc:      "检查密码最小长度/复杂度/有效期策略。",
-			Expected:  "最小长度>=8，最短1天，最长90天，复杂度开启",
-			CanApply:  true,
-			CheckFunc: checkPasswordPolicy,
-			ApplyFunc: applyPasswordPolicy,
-		},
-		{
-			ID:        "guest_user",
-			Name:      "Guest用户状态",
-			Desc:      "检查guest账号是否禁用。",
-			Expected:  "guest账号不存在或已锁定",
-			CanApply:  true,
-			CheckFunc: checkGuestUser,
-			ApplyFunc: applyGuestUser,
-		},
-		{
-			ID:        "usb_autoplay",
-			Name:      "U盘自动播放",
-			Desc:      "检查桌面环境自动挂载/自动打开策略。",
-			Expected:  "自动挂载/自动打开关闭",
-			CanApply:  true,
-			CheckFunc: checkUSBAutoplay,
-			ApplyFunc: applyUSBAutoplay,
-		},
-		{
-			ID:        "chrome_version",
-			Name:      "浏览器版本检测",
-			Desc:      "检测Chrome/Chromium版本。",
-			Expected:  "仅展示信息",
+			Expected:  "最小长度>=10，最短1天，最长90天，复杂度>=4类，失败锁定",
 			CanApply:  false,
-			CheckFunc: checkChromeVersion,
+			CheckFunc: checkPasswordPolicy,
 		},
 		{
 			ID:        "lock_screen",
 			Name:      "锁屏策略",
 			Desc:      "检查锁屏开启与自动锁定时间。",
 			Expected:  "锁屏启用，空闲15分钟内锁定",
-			CanApply:  true,
+			CanApply:  false,
 			CheckFunc: checkLockScreen,
-			ApplyFunc: applyLockScreen,
 		},
 	}
 }
@@ -238,6 +203,7 @@ func runCheck(items []Item, jsonOut bool, outputFile string) {
 	}
 
 	if jsonOut {
+		// Stable machine-readable output for batch collection.
 		payload := Output{OS: readOSRelease(), Items: results}
 		enc := json.NewEncoder(out)
 		enc.SetEscapeHTML(false)
@@ -248,158 +214,51 @@ func runCheck(items []Item, jsonOut bool, outputFile string) {
 		return
 	}
 
-	fmt.Fprintf(out, "系统识别: %s\n\n", readOSRelease())
+	fmt.Fprintf(out, "系统识别: %s\n", readOSRelease())
+	fmt.Fprintln(out, "============================================================")
+	checkedNames := []string{}
+	manualNames := []string{}
 	for _, item := range results {
+		checkedNames = append(checkedNames, item.Name)
+		if !item.CanApply || item.Status == "manual" {
+			manualNames = append(manualNames, item.Name)
+		}
 		name := item.Name
 		if item.Status == "fail" {
 			name = colorize("red", name)
 		}
-		fmt.Fprintf(out, "[%s] %s\n- 结果: %s\n- 当前: %s\n- 期望: %s\n",
-			item.ID, name, item.Status, item.Current, item.Expected)
+		fmt.Fprintf(out, "[%s] %s\n", item.ID, name)
+		fmt.Fprintf(out, "状态: %s\n", item.Status)
+		fmt.Fprintf(out, "当前: %s\n", item.Current)
+		fmt.Fprintf(out, "期望: %s\n", item.Expected)
 		if item.Status == "fail" {
 			if hint := manualFixHint(item.ID); hint != "" {
-				fmt.Fprintf(out, "- 手动修复参考: %s\n", hint)
+				fmt.Fprintf(out, "修复指引: %s\n", hint)
 			}
 		}
-		fmt.Fprintln(out)
+		fmt.Fprintln(out, "------------------------------------------------------------")
 	}
+	if len(checkedNames) > 0 {
+		fmt.Fprintf(out, "已检查项: %s\n", strings.Join(checkedNames, "、"))
+	}
+	if len(manualNames) > 0 {
+		fmt.Fprintf(out, "需人工确认项: %s\n", strings.Join(manualNames, "、"))
+	}
+	fmt.Fprintln(out, "============================================================")
 }
 
 func checkAndRepair(items []Item) error {
-	if os.Geteuid() != 0 {
-		return errors.New("需要root权限执行设置操作")
-	}
-
-	results := make(map[string]Result, len(items))
-	for _, item := range items {
-		results[item.ID] = item.CheckFunc()
-	}
-
-	failItems := []Item{}
-	for _, item := range items {
-		res := results[item.ID]
-		if res.Status == "fail" && item.CanApply && item.ApplyFunc != nil {
-			failItems = append(failItems, item)
-		}
-	}
-
-	if len(failItems) == 0 {
-		fmt.Println("未发现需要修复的基线项。")
-		return nil
-	}
-
-	fmt.Println("需要修复的基线项：")
-	for _, item := range failItems {
-		fmt.Printf("- %s (%s)\n", colorize("red", item.Name), item.ID)
-		hint := manualFixHint(item.ID)
-		if hint != "" {
-			fmt.Printf("  手动修复参考：%s\n", hint)
-		}
-	}
-	fmt.Println()
-
-	reader := bufio.NewReader(os.Stdin)
-	applyRest := false
-
-	for _, item := range failItems {
-		if applyRest {
-			_ = item.ApplyFunc()
-			continue
-		}
-
-		for {
-			fmt.Printf("是否修复[%s] %s ? (y/n/all): ", item.ID, item.Name)
-			input, _ := reader.ReadString('\n')
-			answer := strings.TrimSpace(input)
-			switch strings.ToLower(answer) {
-			case "y":
-				_ = item.ApplyFunc()
-				goto nextItem
-			case "n":
-				goto nextItem
-			case "all":
-				fmt.Print("确认要对剩余所有可设置项执行吗？(y/n): ")
-				input, _ := reader.ReadString('\n')
-				confirm := strings.TrimSpace(input)
-				if strings.EqualFold(confirm, "y") {
-					applyRest = true
-					_ = item.ApplyFunc()
-				}
-				goto nextItem
-			default:
-				fmt.Println("请输入 y / n / all")
-			}
-		}
-
-	nextItem:
-	}
-
-	fmt.Println("修复流程已完成。")
+	fmt.Println("自动修复已禁用，仅执行检查。")
+	runCheck(items, false, "")
 	return nil
 }
 
 func applyOne(items []Item, id string) error {
-	item, ok := findItem(items, id)
-	if !ok {
-		return fmt.Errorf("未找到基线项: %s", id)
-	}
-	if !item.CanApply || item.ApplyFunc == nil {
-		return fmt.Errorf("该项仅检查，不支持设置: %s", id)
-	}
-	if os.Geteuid() != 0 {
-		return errors.New("需要root权限执行设置操作")
-	}
-	if err := item.ApplyFunc(); err != nil {
-		return err
-	}
-	fmt.Printf("已应用: %s\n", id)
-	return nil
+	return errors.New("自动修复已禁用")
 }
 
 func applyAll(items []Item) error {
-	if os.Geteuid() != 0 {
-		return errors.New("需要root权限执行设置操作")
-	}
-	applyRest := false
-	reader := bufio.NewReader(os.Stdin)
-
-	for _, item := range items {
-		if !item.CanApply || item.ApplyFunc == nil {
-			continue
-		}
-		if applyRest {
-			_ = item.ApplyFunc()
-			continue
-		}
-
-		for {
-			fmt.Printf("是否应用[%s] %s ? (y/n/all): ", item.ID, item.Name)
-			input, _ := reader.ReadString('\n')
-			answer := strings.TrimSpace(input)
-			switch strings.ToLower(answer) {
-			case "y":
-				_ = item.ApplyFunc()
-				goto nextItem
-			case "n":
-				goto nextItem
-			case "all":
-				fmt.Print("确认要对剩余所有可设置项执行吗？(y/n): ")
-				input, _ := reader.ReadString('\n')
-				confirm := strings.TrimSpace(input)
-				if strings.EqualFold(confirm, "y") {
-					applyRest = true
-					_ = item.ApplyFunc()
-				}
-				goto nextItem
-			default:
-				fmt.Println("请输入 y / n / all")
-			}
-		}
-
-	nextItem:
-	}
-	fmt.Println("已完成可设置项处理")
-	return nil
+	return errors.New("自动修复已禁用")
 }
 
 func findItem(items []Item, id string) (Item, bool) {
@@ -420,6 +279,32 @@ func readOSRelease() string {
 		return info.Name
 	}
 	return "Linux"
+}
+
+func pamFilesByDistro() ([]string, []string) {
+	// Debian-like vs RHEL-like PAM layout detection.
+	info := detectOSInfo()
+	id := strings.ToLower(info.ID)
+	name := strings.ToLower(info.Name)
+	idLike := strings.ToLower(info.IDLike)
+	isDebianLike := strings.Contains(idLike, "debian") || strings.Contains(id, "uos") || strings.Contains(name, "uos")
+	if isDebianLike {
+		return []string{"/etc/pam.d/common-password"}, []string{"/etc/pam.d/common-auth"}
+	}
+	isRhelLike := strings.Contains(idLike, "rhel") || strings.Contains(idLike, "fedora") || strings.Contains(name, "kylin") || strings.Contains(id, "kylin") || strings.Contains(id, "neokylin")
+	if isRhelLike {
+		return []string{"/etc/pam.d/system-auth", "/etc/pam.d/password-auth"}, []string{"/etc/pam.d/system-auth", "/etc/pam.d/password-auth"}
+	}
+	return []string{"/etc/pam.d/common-password", "/etc/pam.d/system-auth"}, []string{"/etc/pam.d/common-auth", "/etc/pam.d/system-auth"}
+}
+
+func firstExistingFile(paths []string) string {
+	for _, p := range paths {
+		if _, err := os.Stat(p); err == nil {
+			return p
+		}
+	}
+	return ""
 }
 
 func commandExists(name string) bool {
@@ -483,13 +368,14 @@ func checkRiskyPorts() Result {
 		out, _ = runCommand("netstat", "-lntp")
 	}
 	ports := parseListeningPorts(out)
-	risky := []int{22, 23, 135, 137, 138, 139, 445, 455, 3389, 4899}
+	risky := riskyPorts()
 	opened := []int{}
 	for _, p := range risky {
 		if ports[p] {
 			opened = append(opened, p)
 		}
 	}
+	// Combine runtime listening + firewall policy checks.
 	firewallStatus, missingBlocks := checkFirewallBlocks(risky)
 	status := "pass"
 	details := []string{}
@@ -515,6 +401,10 @@ func checkRiskyPorts() Result {
 	return Result{Status: status, Current: strings.Join(details, " | ")}
 }
 
+func riskyPorts() []int {
+	return []int{22, 23, 135, 137, 138, 139, 445, 455, 3389, 4899}
+}
+
 func parseListeningPorts(output string) map[int]bool {
 	ports := make(map[int]bool)
 	re := regexp.MustCompile(`:(\d+)\s`)
@@ -532,6 +422,7 @@ func parseListeningPorts(output string) map[int]bool {
 }
 
 func checkFirewallBlocks(ports []int) (string, []string) {
+	// Prefer native firewall tooling when available.
 	if commandExists("firewall-cmd") && isServiceActive("firewalld") {
 		return checkFirewalldBlocks(ports)
 	}
@@ -764,18 +655,19 @@ func checkPasswordPolicy() Result {
 	if err != nil {
 		return Result{Status: "manual", Current: "缺少/etc/login.defs"}
 	}
-	maxDays := parseLoginDefsAny(string(data), []string{"PASS_MAX_DAYS", "MAX_DAYS", "MAX"})
-	minDays := parseLoginDefsAny(string(data), []string{"PASS_MIN_DAYS", "MIN_DAYS", "MIN"})
-	minLen := parseLoginDefsAny(string(data), []string{"PASS_MIN_LEN", "MIN_LEN", "LEN"})
+	content := string(data)
+	maxKey, minKey, lenKey := loginDefsKeys(content)
+	maxDays := parseLoginDefsAny(content, []string{maxKey, "PASS_MAX_DAYS", "MAX_DAYS", "MAX"})
+	minDays := parseLoginDefsAny(content, []string{minKey, "PASS_MIN_DAYS", "MIN_DAYS", "MIN"})
+	minLen := parseLoginDefsAny(content, []string{lenKey, "PASS_MIN_LEN", "MIN_LEN", "LEN"})
 	pwqMinLen := ""
 	pwqMinClass := ""
 	if minLen == "" {
 		pwqMinLen, pwqMinClass = readPwqualityConfig()
 	}
-	pamFile := "/etc/pam.d/system-auth"
-	if _, err := os.Stat("/etc/pam.d/common-password"); err == nil {
-		pamFile = "/etc/pam.d/common-password"
-	}
+	pamFiles, authFiles := pamFilesByDistro()
+	pamFile := firstExistingFile(pamFiles)
+	authFile := firstExistingFile(authFiles)
 	pamData, _ := os.ReadFile(pamFile)
 	pamContent := string(pamData)
 	pwquality := strings.Contains(pamContent, "pam_pwquality.so") || strings.Contains(pamContent, "pam_cracklib.so")
@@ -792,29 +684,49 @@ func checkPasswordPolicy() Result {
 	if minLen == "" {
 		minLen = pwqMinLen
 	}
+	pamMinClass := pwqMinClass
+	if pamMinClass == "" {
+		pamMinClass = parsePamValue(pamContent, "minclass")
+	}
+	enforceRoot := strings.Contains(pamContent, "enforce_for_root")
+	rememberOK := strings.Contains(pamContent, "remember=5")
+	faillockOK := false
+	if authFile != "" {
+		authContent := readFile(authFile)
+		faillockOK = strings.Contains(authContent, "pam_faillock.so") || strings.Contains(authContent, "pam_tally2.so")
+	}
 
 	status := "pass"
 	issues := []string{}
 	if maxDays == "" || toInt(maxDays) > 90 {
 		status = "fail"
-		issues = append(issues, "PASS_MAX_DAYS")
+		issues = append(issues, maxKey)
 	}
 	if minDays == "" || toInt(minDays) < 1 {
 		status = "fail"
-		issues = append(issues, "PASS_MIN_DAYS")
+		issues = append(issues, minKey)
 	}
-	if minLen == "" || toInt(minLen) < 8 {
+	if minLen == "" || toInt(minLen) < 10 {
 		status = "fail"
-		issues = append(issues, "PASS_MIN_LEN")
+		issues = append(issues, lenKey)
 	}
-	if !pwquality || (pwqMinClass != "" && toInt(pwqMinClass) < 3) {
+	if !pwquality || (pamMinClass != "" && toInt(pamMinClass) < 4) || !enforceRoot {
 		status = "fail"
 		issues = append(issues, "PAM复杂度")
 	}
-	current := fmt.Sprintf("MAX=%s, MIN=%s, LEN=%s, PAM=%s", valueOrNA(maxDays), valueOrNA(minDays), valueOrNA(minLen), boolToStr(pwquality))
-	if pwqMinClass != "" {
-		current += fmt.Sprintf(", MINCLASS=%s", pwqMinClass)
+	if !rememberOK {
+		status = "fail"
+		issues = append(issues, "PAM历史密码")
 	}
+	if !faillockOK {
+		status = "fail"
+		issues = append(issues, "登录失败锁定")
+	}
+	current := fmt.Sprintf("MAX=%s, MIN=%s, LEN=%s, PAM=%s", valueOrNA(maxDays), valueOrNA(minDays), valueOrNA(minLen), boolToStr(pwquality))
+	if pamMinClass != "" {
+		current += fmt.Sprintf(", MINCLASS=%s", pamMinClass)
+	}
+	current += fmt.Sprintf(", ENFORCE_ROOT=%t, REMEMBER=%t, FAILLOCK=%t", enforceRoot, rememberOK, faillockOK)
 	if len(issues) > 0 {
 		current += " | 缺失: " + strings.Join(issues, ", ")
 	}
@@ -849,6 +761,11 @@ func loginDefsKeys(content string) (string, string, string) {
 	maxKey := firstMatchKey(content, []string{"MAX_DAYS", "MAX"})
 	minKey := firstMatchKey(content, []string{"MIN_DAYS", "MIN"})
 	lenKey := firstMatchKey(content, []string{"MIN_LEN", "LEN"})
+	if maxKey != "" || minKey != "" {
+		if lenKey == "" {
+			lenKey = "LEN"
+		}
+	}
 	if maxKey == "" {
 		maxKey = "PASS_MAX_DAYS"
 	}
@@ -919,33 +836,6 @@ func ensurePwqualityConfig(minlen, minclass string) error {
 	return nil
 }
 
-func checkGuestUser() Result {
-	if !commandExists("getent") {
-		return Result{Status: "manual", Current: "缺少getent命令"}
-	}
-	out, code := runCommand("getent", "passwd", "guest")
-	if code != 0 || out == "" {
-		return Result{Status: "pass", Current: "guest不存在"}
-	}
-	parts := strings.Split(out, ":")
-	shell := ""
-	if len(parts) >= 7 {
-		shell = parts[6]
-	}
-	locked := "unknown"
-	if commandExists("passwd") {
-		status, _ := runCommand("passwd", "-S", "guest")
-		fields := strings.Fields(status)
-		if len(fields) >= 2 {
-			locked = fields[1]
-		}
-	}
-	if strings.Contains(shell, "nologin") {
-		return Result{Status: "pass", Current: fmt.Sprintf("guest存在, shell=%s, locked=%s", shell, locked)}
-	}
-	return Result{Status: "fail", Current: fmt.Sprintf("guest存在, shell=%s, locked=%s", shell, locked)}
-}
-
 func checkUSBAutoplay() Result {
 	config := "/etc/dconf/db/local.d/00-xc-baseline"
 	data, err := os.ReadFile(config)
@@ -961,18 +851,29 @@ func checkUSBAutoplay() Result {
 	return Result{Status: "fail", Current: fmt.Sprintf("automount=%t, automount-open=%t", automount, automountOpen)}
 }
 
-func checkChromeVersion() Result {
-	candidates := []string{"google-chrome", "chromium", "chromium-browser"}
-	for _, bin := range candidates {
-		if commandExists(bin) {
-			out, _ := runCommand(bin, "--version")
-			if out == "" {
-				out = bin + "已安装"
-			}
-			return Result{Status: "info", Current: out}
-		}
+func applyUSBAutoplay() error {
+	config := "/etc/dconf/db/local.d/00-xc-baseline"
+	lockFile := "/etc/dconf/db/local.d/locks/00-xc-baseline"
+	if err := os.MkdirAll(filepath.Dir(lockFile), 0755); err != nil {
+		return err
 	}
-	return Result{Status: "info", Current: "未安装Chrome/Chromium"}
+	content := readFile(config)
+	content = ensureSection(content, "org/gnome/desktop/media-handling")
+	content = upsertKey(content, "automount", "false")
+	content = upsertKey(content, "automount-open", "false")
+	if err := os.WriteFile(config, []byte(content), 0644); err != nil {
+		return err
+	}
+	lockContent := readFile(lockFile)
+	lockContent = ensureLock(lockContent, "/org/gnome/desktop/media-handling/automount")
+	lockContent = ensureLock(lockContent, "/org/gnome/desktop/media-handling/automount-open")
+	if err := os.WriteFile(lockFile, []byte(lockContent), 0644); err != nil {
+		return err
+	}
+	if commandExists("dconf") {
+		_, _ = runCommand("dconf", "update")
+	}
+	return nil
 }
 
 func checkLockScreen() Result {
@@ -1066,6 +967,83 @@ func applyFTPService() error {
 	return nil
 }
 
+func applyRiskyPorts() error {
+	// Auto-fix via the first available firewall backend.
+	ports := riskyPorts()
+	if commandExists("firewall-cmd") {
+		return applyFirewalldBlocks(ports)
+	}
+	if commandExists("nft") {
+		if err := applyNftBlocks(ports); err == nil {
+			return nil
+		}
+	}
+	if commandExists("iptables") {
+		return applyIptablesBlocks(ports)
+	}
+	return errors.New("未检测到可用防火墙组件")
+}
+
+func applyFirewalldBlocks(ports []int) error {
+	if commandExists("systemctl") {
+		_, _ = runCommand("systemctl", "enable", "--now", "firewalld")
+	}
+	if !isServiceActive("firewalld") {
+		return errors.New("firewalld 未运行")
+	}
+	for _, port := range ports {
+		for _, proto := range []string{"tcp", "udp"} {
+			for _, family := range []string{"ipv4", "ipv6"} {
+				_, _ = runCommand("firewall-cmd", "--permanent", "--add-rich-rule",
+					fmt.Sprintf("rule family=\"%s\" port port=\"%d\" protocol=\"%s\" reject", family, port, proto))
+				_, _ = runCommand("firewall-cmd", "--permanent", "--add-rich-rule",
+					fmt.Sprintf("rule family=\"%s\" direction=\"out\" port port=\"%d\" protocol=\"%s\" reject", family, port, proto))
+			}
+		}
+	}
+	_, _ = runCommand("firewall-cmd", "--reload")
+	return nil
+}
+
+func applyIptablesBlocks(ports []int) error {
+	for _, port := range ports {
+		for _, proto := range []string{"tcp", "udp"} {
+			ensureIptablesRule("iptables", "INPUT", proto, port)
+			ensureIptablesRule("iptables", "OUTPUT", proto, port)
+			if commandExists("ip6tables") {
+				ensureIptablesRule("ip6tables", "INPUT", proto, port)
+				ensureIptablesRule("ip6tables", "OUTPUT", proto, port)
+			}
+		}
+	}
+	return nil
+}
+
+func ensureIptablesRule(bin, chain, proto string, port int) {
+	args := []string{"-C", chain, "-p", proto, "--dport", fmt.Sprintf("%d", port), "-j", "DROP"}
+	_, code := runCommand(bin, args...)
+	if code == 0 {
+		return
+	}
+	addArgs := []string{"-A", chain, "-p", proto, "--dport", fmt.Sprintf("%d", port), "-j", "DROP"}
+	_, _ = runCommand(bin, addArgs...)
+}
+
+func applyNftBlocks(ports []int) error {
+	_, _ = runCommand("nft", "add", "table", "inet", "filter")
+	_, _ = runCommand("nft", "add", "chain", "inet", "filter", "input",
+		"{", "type", "filter", "hook", "input", "priority", "0", ";", "}")
+	_, _ = runCommand("nft", "add", "chain", "inet", "filter", "output",
+		"{", "type", "filter", "hook", "output", "priority", "0", ";", "}")
+	for _, port := range ports {
+		for _, proto := range []string{"tcp", "udp"} {
+			_, _ = runCommand("nft", "add", "rule", "inet", "filter", "input", proto, "dport", fmt.Sprintf("%d", port), "drop")
+			_, _ = runCommand("nft", "add", "rule", "inet", "filter", "output", proto, "dport", fmt.Sprintf("%d", port), "drop")
+		}
+	}
+	return nil
+}
+
 func applyIPv6Disabled() error {
 	path := "/etc/sysctl.d/99-xc-baseline.conf"
 	lines := readLines(path)
@@ -1085,10 +1063,14 @@ func applyIPv6Disabled() error {
 	writeProcValue("/proc/sys/net/ipv6/conf/all/disable_ipv6", "1")
 	writeProcValue("/proc/sys/net/ipv6/conf/default/disable_ipv6", "1")
 	writeProcValue("/proc/sys/net/ipv6/conf/lo/disable_ipv6", "1")
+	if readProcValue("/proc/sys/net/ipv6/conf/all/disable_ipv6") != "1" {
+		return errors.New("IPv6禁用未生效，请确认系统未被策略覆盖")
+	}
 	return nil
 }
 
 func applyPasswordPolicy() error {
+	// Password policy differs by distro family; detect and write the right PAM files.
 	loginDefs := "/etc/login.defs"
 	content := readFile(loginDefs)
 	maxKey, minKey, lenKey := loginDefsKeys(content)
@@ -1098,20 +1080,23 @@ func applyPasswordPolicy() error {
 	if err := replaceOrAppendKV(loginDefs, minKey, "1", false); err != nil {
 		return err
 	}
-	if err := replaceOrAppendKV(loginDefs, lenKey, "8", false); err != nil {
+	if err := replaceOrAppendKV(loginDefs, lenKey, "10", false); err != nil {
 		return err
 	}
+	_ = replaceOrAppendKV(loginDefs, "PASS_WARN_AGE", "7", false)
 
 	// Some Kylin builds honor pwquality.conf over PASS_MIN_LEN.
-	if err := ensurePwqualityConfig("8", "3"); err != nil {
+	if err := ensurePwqualityConfig("10", "4"); err != nil {
 		return err
 	}
 
-	pamFile := "/etc/pam.d/system-auth"
-	if _, err := os.Stat("/etc/pam.d/common-password"); err == nil {
-		pamFile = "/etc/pam.d/common-password"
+	pamFiles, authFiles := pamFilesByDistro()
+	pamFile := firstExistingFile(pamFiles)
+	authFile := firstExistingFile(authFiles)
+	if pamFile == "" {
+		return errors.New("未找到PAM密码配置文件")
 	}
-	target := "password requisite pam_pwquality.so retry=3 minlen=8 minclass=3"
+	target := "password requisite pam_pwquality.so retry=3 enforce_for_root minlen=10 minclass=4"
 	pamLines := readLines(pamFile)
 	found := false
 	for i, line := range pamLines {
@@ -1123,42 +1108,55 @@ func applyPasswordPolicy() error {
 	if !found {
 		pamLines = append(pamLines, target)
 	}
-	return writeLines(pamFile, pamLines)
-}
+	if err := writeLines(pamFile, pamLines); err != nil {
+		return err
+	}
+	pamLines = readLines(pamFile)
+	unixLine := "password sufficient pam_unix.so sha512 shadow remember=5 use_authtok"
+	unixFound := false
+	for i, line := range pamLines {
+		if strings.Contains(line, "pam_unix.so") && strings.Contains(line, "password") {
+			pamLines[i] = unixLine
+			unixFound = true
+		}
+	}
+	if !unixFound {
+		pamLines = append(pamLines, unixLine)
+	}
+	if err := writeLines(pamFile, pamLines); err != nil {
+		return err
+	}
 
-func applyGuestUser() error {
-	if commandExists("usermod") {
-		_, _ = runCommand("usermod", "-L", "guest")
-		_, _ = runCommand("usermod", "-s", "/sbin/nologin", "guest")
-		return nil
+	if authFile != "" {
+		authLines := readLines(authFile)
+		if pamModuleExists("pam_faillock.so") {
+			authLines = ensurePamLine(authLines, "pam_faillock.so preauth", "auth required pam_faillock.so preauth silent deny=5 unlock_time=600")
+			authLines = ensurePamLine(authLines, "pam_faillock.so authfail", "auth [default=die] pam_faillock.so authfail deny=5 unlock_time=600")
+			authLines = ensurePamLine(authLines, "account required pam_faillock.so", "account required pam_faillock.so")
+		} else if pamModuleExists("pam_tally2.so") {
+			authLines = ensurePamLine(authLines, "pam_tally2.so", "auth required pam_tally2.so deny=5 unlock_time=600")
+			authLines = ensurePamLine(authLines, "pam_tally2.so", "account required pam_tally2.so")
+		}
+		if err := writeLines(authFile, authLines); err != nil {
+			return err
+		}
 	}
-	if commandExists("passwd") {
-		_, _ = runCommand("passwd", "-l", "guest")
-	}
-	return nil
-}
 
-func applyUSBAutoplay() error {
-	config := "/etc/dconf/db/local.d/00-xc-baseline"
-	lockFile := "/etc/dconf/db/local.d/locks/00-xc-baseline"
-	if err := os.MkdirAll(filepath.Dir(lockFile), 0755); err != nil {
-		return err
+	// Verify effective values after write.
+	updated := readFile(loginDefs)
+	vMax := parseLoginDefsAny(updated, []string{maxKey, "PASS_MAX_DAYS", "MAX_DAYS", "MAX"})
+	vMin := parseLoginDefsAny(updated, []string{minKey, "PASS_MIN_DAYS", "MIN_DAYS", "MIN"})
+	vLen := parseLoginDefsAny(updated, []string{lenKey, "PASS_MIN_LEN", "MIN_LEN", "LEN"})
+	if vMax != "90" || vMin != "1" || toInt(vLen) < 10 {
+		return errors.New("login.defs 未按预期更新")
 	}
-	content := readFile(config)
-	content = ensureSection(content, "org/gnome/desktop/media-handling")
-	content = upsertKey(content, "automount", "false")
-	content = upsertKey(content, "automount-open", "false")
-	if err := os.WriteFile(config, []byte(content), 0644); err != nil {
-		return err
+	pwMinLen, pwMinClass := readPwqualityConfig()
+	if toInt(pwMinLen) < 10 || toInt(pwMinClass) < 4 {
+		return errors.New("pwquality.conf 未按预期更新")
 	}
-	lockContent := readFile(lockFile)
-	lockContent = ensureLock(lockContent, "/org/gnome/desktop/media-handling/automount")
-	lockContent = ensureLock(lockContent, "/org/gnome/desktop/media-handling/automount-open")
-	if err := os.WriteFile(lockFile, []byte(lockContent), 0644); err != nil {
-		return err
-	}
-	if commandExists("dconf") {
-		_, _ = runCommand("dconf", "update")
+	pamContent := readFile(pamFile)
+	if parsePamValue(pamContent, "minlen") == "" || parsePamValue(pamContent, "minclass") == "" {
+		return errors.New("PAM 复杂度参数未写入")
 	}
 	return nil
 }
@@ -1254,6 +1252,40 @@ func upsertKVAllowComment(lines []string, key, value string, useEquals bool) []s
 
 func writeProcValue(path, value string) {
 	_ = os.WriteFile(path, []byte(value), 0644)
+}
+
+func ensurePamLine(lines []string, needle string, line string) []string {
+	for i, existing := range lines {
+		if strings.Contains(existing, needle) {
+			lines[i] = line
+			return lines
+		}
+	}
+	return append(lines, line)
+}
+
+func pamModuleExists(module string) bool {
+	paths := []string{
+		"/lib/security/" + module,
+		"/lib64/security/" + module,
+		"/lib/x86_64-linux-gnu/security/" + module,
+		"/usr/lib/security/" + module,
+		"/usr/lib64/security/" + module,
+	}
+	for _, path := range paths {
+		if _, err := os.Stat(path); err == nil {
+			return true
+		}
+	}
+	return false
+}
+
+func readProcValue(path string) string {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(data))
 }
 
 func replaceOrAppendKV(path, key, value string, useEquals bool) error {
@@ -1370,23 +1402,67 @@ func colorize(color, text string) string {
 }
 
 func manualFixHint(id string) string {
+	info := detectOSInfo()
+	idLower := strings.ToLower(info.ID)
+	nameLower := strings.ToLower(info.Name)
+	isUOS := strings.Contains(idLower, "uos") || strings.Contains(nameLower, "uos")
+	isKylin := strings.Contains(idLower, "kylin") || strings.Contains(nameLower, "kylin")
+	isNeoKylin := strings.Contains(idLower, "neokylin") || strings.Contains(nameLower, "neokylin")
+	guiPrefix := "系统设置"
+	if isUOS {
+		guiPrefix = "控制中心"
+	}
 	switch id {
 	case "ftp_service":
-		return "systemctl stop vsftpd && systemctl disable vsftpd"
+		return "在“服务管理”中停用 FTP 服务（vsftpd/proftpd 等）"
 	case "risky_ports":
-		return firewallFixHint()
-	case "ipv6_disabled":
-		return "sysctl -w net.ipv6.conf.all.disable_ipv6=1 ..."
-	case "patch_updates":
-		return patchFixHint()
-	case "password_policy":
-		return "编辑 /etc/login.defs 与 PAM 配置（minlen/minclass）"
-	case "guest_user":
-		return "usermod -L guest && usermod -s /sbin/nologin guest"
+		if isUOS {
+			return guiPrefix + " → 安全与隐私 → 防火墙 → 高级规则 → 添加端口封禁"
+		}
+		if isKylin || isNeoKylin {
+			return guiPrefix + " → 安全中心/防火墙 → 端口规则 → 添加拒绝规则"
+		}
+		return guiPrefix + " → 防火墙 → 端口规则 → 添加拒绝规则"
 	case "usb_autoplay":
-		return "编辑 /etc/dconf/db/local.d/00-xc-baseline 并执行 dconf update"
+		if isUOS {
+			return guiPrefix + " → 设备与驱动 → 可移动存储 → 关闭自动播放/自动挂载"
+		}
+		if isKylin || isNeoKylin {
+			return guiPrefix + " → 设备 → 可移动存储 → 关闭自动挂载/自动打开"
+		}
+		return guiPrefix + " → 设备 → 可移动存储 → 关闭自动挂载/自动打开"
+	case "ipv6_disabled":
+		if isUOS {
+			return guiPrefix + " → 网络 → 高级设置 → 关闭 IPv6"
+		}
+		if isKylin || isNeoKylin {
+			return guiPrefix + " → 网络 → 高级 → 关闭 IPv6"
+		}
+		return guiPrefix + " → 网络 → 高级 → 关闭 IPv6"
+	case "patch_updates":
+		if isUOS {
+			return guiPrefix + " → 更新 → 检查更新 → 全部更新"
+		}
+		if isKylin || isNeoKylin {
+			return guiPrefix + " → 更新管理 → 检查更新 → 安装更新"
+		}
+		return guiPrefix + " → 更新管理 → 检查更新 → 安装更新"
+	case "password_policy":
+		if isUOS {
+			return guiPrefix + " → 账户与安全 → 密码策略 → 长度>=10/复杂度>=4/历史5次/锁定"
+		}
+		if isKylin || isNeoKylin {
+			return guiPrefix + " → 安全中心 → 账户策略 → 密码复杂度与锁定策略"
+		}
+		return guiPrefix + " → 账户策略 → 密码复杂度与锁定策略"
 	case "lock_screen":
-		return "设置 idle-delay=uint32 900, lock-enabled=true, lock-delay=uint32 0"
+		if isUOS {
+			return guiPrefix + " → 个性化 → 锁屏 → 开启锁屏并设置 15 分钟内自动锁定"
+		}
+		if isKylin || isNeoKylin {
+			return guiPrefix + " → 个性化 → 锁屏 → 开启并设置 15 分钟内自动锁定"
+		}
+		return guiPrefix + " → 个性化 → 锁屏 → 开启并设置 15 分钟内自动锁定"
 	default:
 		return ""
 	}

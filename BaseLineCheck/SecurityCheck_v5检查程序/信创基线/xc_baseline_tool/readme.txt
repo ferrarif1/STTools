@@ -34,10 +34,7 @@ GOOS=linux ./build.sh
    ./xc-baseline-go --check
 3) 执行检查（JSON 输出）
    ./xc-baseline-go --check --json --output result.json
-4) 应用单项设置
-   sudo ./xc-baseline-go --apply password_policy
-5) 应用所有可设置项（逐项 y/n/all）
-   sudo ./xc-baseline-go --apply-all
+4) 自动修复已关闭，仅提供检查与手动修复参考
 
 输出说明
 - 文本输出直接显示在控制台
@@ -50,7 +47,7 @@ GOOS=linux ./build.sh
    - run.sh
 2) 双击 run.sh
    - 回车：立即检查
-   - 输入数字：检查/修复/查看项等
+   - 输入数字：检查/查看项等
 3) 若双击无反应，请先执行：
    chmod +x run.sh
 4) 如遇 AT-SPI 警告（mate-terminal 打印提示）可忽略，不影响执行

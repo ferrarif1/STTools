@@ -83,23 +83,21 @@ launch_terminal() {
 }
 
 run_menu_in_terminal() {
-  echo "信创基线工具"
-  echo "-----------------------------"
-  echo "回车: 立即检查"
-  echo "1) 检查并按提示修复"
-  echo "2) 仅检查"
-  echo "3) 查看检查项"
-  echo "0) 退出"
-  echo -n "请选择: "
-  read -r choice
-  case "$choice" in
-    "") "$BIN" --check ;;
-    1) "$BIN" --check-fix ;;
-    2) "$BIN" --check ;;
-    3) "$BIN" --list ;;
-    0) exit 0 ;;
-    *) echo "无效选择" ;;
-  esac
+echo "信创基线工具"
+echo "-----------------------------"
+echo "回车: 立即检查"
+echo "1) 仅检查"
+echo "2) 查看检查项"
+echo "0) 退出"
+echo -n "请选择: "
+read -r choice
+case "$choice" in
+  "") "$BIN" --check ;;
+  1) "$BIN" --check ;;
+  2) "$BIN" --list ;;
+  0) exit 0 ;;
+  *) echo "无效选择" ;;
+esac
   echo
   read -r -p "按回车关闭..." _
 }
