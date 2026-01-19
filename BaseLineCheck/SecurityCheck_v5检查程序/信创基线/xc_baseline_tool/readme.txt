@@ -8,8 +8,8 @@
 - 仅使用系统自带命令与配置文件（无 Python/Node 依赖）
 
 运行说明
-- 检查无需 root 权限
-- 设置项需要 root 权限（sudo）
+- 仅提供检查功能（已移除自动修复/应用）
+- 检查通常无需 root 权限，部分系统信息受权限影响可能显示为空
 - 无需安装图形组件，双击会自动打开终端交互（若未执行请先赋予执行权限）
 - 程序会根据系统版本/组件自动选择包管理器与防火墙检测方式
 
@@ -34,7 +34,7 @@ GOOS=linux ./build.sh
    ./xc-baseline-go --check
 3) 执行检查（JSON 输出）
    ./xc-baseline-go --check --json --output result.json
-4) 自动修复已关闭，仅提供检查与手动修复参考
+4) 本工具不提供自动修复/应用，仅输出检查结果与手动修复参考
 
 输出说明
 - 文本输出直接显示在控制台
@@ -53,7 +53,7 @@ GOOS=linux ./build.sh
 4) 如遇 AT-SPI 警告（mate-terminal 打印提示）可忽略，不影响执行
 5) 运行将强制在当前终端交互
 
-手动修复参考（高危端口封禁）
+手动修复参考（非工具功能）
 按防火墙类型操作：
 
 1) firewalld（推荐，需服务开启）
@@ -141,5 +141,3 @@ GOOS=linux ./build.sh
   /org/gnome/desktop/screensaver/lock-enabled
   /org/gnome/desktop/screensaver/lock-delay
 - 执行：dconf update
-
-which mate-terminal gnome-terminal x-terminal-emulator konsole deepin-terminal ukui-terminal xfce4-terminal xterm

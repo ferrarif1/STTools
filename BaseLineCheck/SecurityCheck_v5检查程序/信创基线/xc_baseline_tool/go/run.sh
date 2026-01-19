@@ -27,7 +27,7 @@ if [ ! -x "$BIN" ]; then
 fi
 
 if [ -z "${DISPLAY:-}" ] && [ -z "${WAYLAND_DISPLAY:-}" ]; then
-  "$BIN" --check-fix
+  "$BIN" --check
   exit 0
 fi
 

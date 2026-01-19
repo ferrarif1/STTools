@@ -1,0 +1,24 @@
+信创基线工具 - 极简操作说明
+=========================
+
+只做检查，不提供自动修复。
+
+最快使用（双击）
+1) 将以下文件放在同一目录：
+   - run.sh
+   - xc-baseline-go-amd64
+   - xc-baseline-go-arm64
+2) 双击 run.sh
+3) 按提示回车即可开始检查
+
+命令行使用
+1) 列出检查项：
+   ./xc-baseline-go --list
+2) 执行检查：
+   ./xc-baseline-go --check
+3) 输出为 JSON：
+   ./xc-baseline-go --check --json --output result.json
+
+结果说明
+- 文本结果直接在终端显示
+- JSON 结果保存在指定文件

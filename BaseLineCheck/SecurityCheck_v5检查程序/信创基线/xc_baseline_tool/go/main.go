@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -376,7 +375,7 @@ func checkRiskyPorts() Result {
 		}
 	}
 	// Combine runtime listening + firewall policy checks.
-	firewallStatus, missingBlocks := checkFirewallBlocks(risky)
+	firewallStatus, missingBlocks, hint, hintKind := checkFirewallBlocks(risky)
 	status := "pass"
 	details := []string{}
 	if len(opened) > 0 {
@@ -391,12 +390,25 @@ func checkRiskyPorts() Result {
 	}
 	if firewallStatus == "absent" {
 		status = "fail"
+		details = append(details, "防火墙未安装")
+	} else if firewallStatus == "inactive" {
+		status = "fail"
 		details = append(details, "防火墙未启用")
 	} else if len(missingBlocks) > 0 {
 		status = "fail"
 		details = append(details, "未封禁: "+strings.Join(missingBlocks, ", "))
 	} else {
 		details = append(details, "高危端口已配置封禁策略")
+	}
+	if hint != "" {
+		switch hintKind {
+		case "install":
+			details = append(details, "安装命令: "+hint)
+		case "enable":
+			details = append(details, "启用命令: "+hint)
+		case "recommend":
+			details = append(details, hint)
+		}
 	}
 	return Result{Status: status, Current: strings.Join(details, " | ")}
 }
@@ -421,18 +433,51 @@ func parseListeningPorts(output string) map[int]bool {
 	return ports
 }
 
-func checkFirewallBlocks(ports []int) (string, []string) {
+func checkFirewallBlocks(ports []int) (string, []string, string, string) {
+	info := detectOSInfo()
+	kind := detectDistroKind(info)
+	if kind.IsUOS {
+		if commandExists("ufw") {
+			status, missing := checkUFWBlocks(ports)
+			if status == "inactive" {
+				return "inactive", missing, "sudo ufw enable", "enable"
+			}
+			return status, missing, "", ""
+		}
+		if commandExists("iptables") {
+			status, missing := checkIptablesBlocksInputOnly(ports)
+			return status, missing, "建议安装UFW: " + pkgInstallCmd("ufw"), "recommend"
+		}
+		return "absent", portsToProtoListInputOnly(ports), pkgInstallCmd("ufw"), "install"
+	}
+	if kind.IsKylin || kind.IsNeoKylin {
+		if commandExists("firewall-cmd") {
+			if !isServiceActive("firewalld") {
+				return "inactive", portsToProtoListInputOnly(ports), "sudo systemctl enable --now firewalld", "enable"
+			}
+			status, missing := checkFirewalldBlocksInputOnly(ports)
+			return status, missing, "", ""
+		}
+		if commandExists("iptables") {
+			status, missing := checkIptablesBlocksInputOnly(ports)
+			return status, missing, "", ""
+		}
+		return "absent", portsToProtoListInputOnly(ports), pkgInstallCmd("firewalld"), "install"
+	}
 	// Prefer native firewall tooling when available.
 	if commandExists("firewall-cmd") && isServiceActive("firewalld") {
-		return checkFirewalldBlocks(ports)
+		status, missing := checkFirewalldBlocks(ports)
+		return status, missing, "", ""
 	}
 	if commandExists("nft") {
-		return checkNftBlocks(ports)
+		status, missing := checkNftBlocks(ports)
+		return status, missing, "", ""
 	}
 	if commandExists("iptables") {
-		return checkIptablesBlocks(ports)
+		status, missing := checkIptablesBlocks(ports)
+		return status, missing, "", ""
 	}
-	return "absent", portsToProtoList(ports)
+	return "absent", portsToProtoList(ports), firewallInstallHint(), "install"
 }
 
 func isServiceActive(service string) bool {
@@ -464,6 +509,23 @@ func checkFirewalldBlocks(ports []int) (string, []string) {
 	return "firewalld", dedupeStrings(missing)
 }
 
+func checkFirewalldBlocksInputOnly(ports []int) (string, []string) {
+	missing := []string{}
+	richRules, _ := runCommand("firewall-cmd", "--list-rich-rules")
+	for _, port := range ports {
+		for _, proto := range []string{"tcp", "udp"} {
+			if firewalldPortAllowed(port, proto) {
+				missing = append(missing, fmt.Sprintf("%d/%s(in)", port, proto))
+				continue
+			}
+			if !firewalldHasDenyRule(richRules, port, proto, "in") {
+				missing = append(missing, fmt.Sprintf("%d/%s(in)", port, proto))
+			}
+		}
+	}
+	return "firewalld", dedupeStrings(missing)
+}
+
 func firewalldPortAllowed(port int, proto string) bool {
 	out, _ := runCommand("firewall-cmd", "--query-port", fmt.Sprintf("%d/%s", port, proto))
 	return strings.TrimSpace(out) == "yes"
@@ -488,6 +550,54 @@ func firewalldHasDenyRule(rules string, port int, proto string, direction string
 	return false
 }
 
+func checkUFWBlocks(ports []int) (string, []string) {
+	out, code := runCommand("ufw", "status", "verbose")
+	if code != 0 {
+		return "ufw", portsToProtoListInputOnly(ports)
+	}
+	if strings.Contains(out, "Status: inactive") {
+		return "inactive", portsToProtoListInputOnly(ports)
+	}
+	blocked := make(map[string]bool)
+	allowed := make(map[string]bool)
+	defaultDenyIn := false
+	denyRe := regexp.MustCompile(`(?i)^\s*(\d+)/(tcp|udp).*\b(deny|reject)\b`)
+	allowRe := regexp.MustCompile(`(?i)^\s*(\d+)/(tcp|udp).*\b(allow|limit)\b`)
+	for _, line := range strings.Split(out, "\n") {
+		trim := strings.TrimSpace(line)
+		if strings.HasPrefix(trim, "Default:") && strings.Contains(trim, "deny (incoming)") {
+			defaultDenyIn = true
+		}
+		if match := denyRe.FindStringSubmatch(line); len(match) == 4 {
+			portStr := match[1]
+			proto := strings.ToLower(match[2])
+			blocked[fmt.Sprintf("%s/%s", portStr, proto)] = true
+			continue
+		}
+		if match := allowRe.FindStringSubmatch(line); len(match) == 4 {
+			portStr := match[1]
+			proto := strings.ToLower(match[2])
+			allowed[fmt.Sprintf("%s/%s", portStr, proto)] = true
+		}
+	}
+	missing := []string{}
+	for _, port := range ports {
+		for _, proto := range []string{"tcp", "udp"} {
+			key := fmt.Sprintf("%d/%s", port, proto)
+			if blocked[key] {
+				continue
+			}
+			if defaultDenyIn && !allowed[key] {
+				continue
+			}
+			if !blocked[key] {
+				missing = append(missing, fmt.Sprintf("%d/%s(in)", port, proto))
+			}
+		}
+	}
+	return "ufw", dedupeStrings(missing)
+}
+
 func checkIptablesBlocks(ports []int) (string, []string) {
 	inputRules, _ := runCommand("iptables", "-S", "INPUT")
 	outputRules, _ := runCommand("iptables", "-S", "OUTPUT")
@@ -499,6 +609,19 @@ func checkIptablesBlocks(ports []int) (string, []string) {
 			}
 			if !iptablesHasDrop(outputRules, port, proto) {
 				missing = append(missing, fmt.Sprintf("%d/%s(out)", port, proto))
+			}
+		}
+	}
+	return "iptables", dedupeStrings(missing)
+}
+
+func checkIptablesBlocksInputOnly(ports []int) (string, []string) {
+	inputRules, _ := runCommand("iptables", "-S", "INPUT")
+	missing := []string{}
+	for _, port := range ports {
+		for _, proto := range []string{"tcp", "udp"} {
+			if !iptablesHasDrop(inputRules, port, proto) {
+				missing = append(missing, fmt.Sprintf("%d/%s(in)", port, proto))
 			}
 		}
 	}
@@ -565,6 +688,15 @@ func portsToProtoList(ports []int) []string {
 		list = append(list, fmt.Sprintf("%d/udp(in)", port))
 		list = append(list, fmt.Sprintf("%d/tcp(out)", port))
 		list = append(list, fmt.Sprintf("%d/udp(out)", port))
+	}
+	return list
+}
+
+func portsToProtoListInputOnly(ports []int) []string {
+	list := []string{}
+	for _, port := range ports {
+		list = append(list, fmt.Sprintf("%d/tcp(in)", port))
+		list = append(list, fmt.Sprintf("%d/udp(in)", port))
 	}
 	return list
 }
@@ -1403,63 +1535,59 @@ func colorize(color, text string) string {
 
 func manualFixHint(id string) string {
 	info := detectOSInfo()
-	idLower := strings.ToLower(info.ID)
-	nameLower := strings.ToLower(info.Name)
-	isUOS := strings.Contains(idLower, "uos") || strings.Contains(nameLower, "uos")
-	isKylin := strings.Contains(idLower, "kylin") || strings.Contains(nameLower, "kylin")
-	isNeoKylin := strings.Contains(idLower, "neokylin") || strings.Contains(nameLower, "neokylin")
+	kind := detectDistroKind(info)
 	guiPrefix := "系统设置"
-	if isUOS {
+	if kind.IsUOS {
 		guiPrefix = "控制中心"
 	}
 	switch id {
 	case "ftp_service":
 		return "在“服务管理”中停用 FTP 服务（vsftpd/proftpd 等）"
 	case "risky_ports":
-		if isUOS {
-			return guiPrefix + " → 安全与隐私 → 防火墙 → 高级规则 → 添加端口封禁"
+		if kind.IsUOS {
+			return "UOS建议使用UFW: " + pkgInstallCmd("ufw") + "（未安装时）。示例: sudo ufw default deny incoming; sudo ufw allow 80/tcp; sudo ufw allow 443/tcp; sudo ufw deny 21/tcp 3389/tcp 445/tcp; sudo ufw enable; sudo ufw status verbose。或使用iptables: sudo iptables -A INPUT -p tcp --dport 21 -j DROP 等。"
 		}
-		if isKylin || isNeoKylin {
-			return guiPrefix + " → 安全中心/防火墙 → 端口规则 → 添加拒绝规则"
+		if kind.IsKylin || kind.IsNeoKylin {
+			return "麒麟建议使用iptables或firewalld。iptables示例: sudo iptables -A INPUT -p tcp --dport 139 -j DROP; sudo iptables -A INPUT -p tcp --dport 445 -j DROP。firewalld示例: sudo systemctl enable --now firewalld; sudo firewall-cmd --zone=public --remove-port=139/tcp --permanent; sudo firewall-cmd --zone=public --remove-port=445/tcp --permanent; sudo firewall-cmd --reload。未安装防火墙时: " + pkgInstallCmd("firewalld") + "。"
 		}
 		return guiPrefix + " → 防火墙 → 端口规则 → 添加拒绝规则"
 	case "usb_autoplay":
-		if isUOS {
+		if kind.IsUOS {
 			return guiPrefix + " → 设备与驱动 → 可移动存储 → 关闭自动播放/自动挂载"
 		}
-		if isKylin || isNeoKylin {
+		if kind.IsKylin || kind.IsNeoKylin {
 			return guiPrefix + " → 设备 → 可移动存储 → 关闭自动挂载/自动打开"
 		}
 		return guiPrefix + " → 设备 → 可移动存储 → 关闭自动挂载/自动打开"
 	case "ipv6_disabled":
-		if isUOS {
+		if kind.IsUOS {
 			return guiPrefix + " → 网络 → 高级设置 → 关闭 IPv6"
 		}
-		if isKylin || isNeoKylin {
+		if kind.IsKylin || kind.IsNeoKylin {
 			return guiPrefix + " → 网络 → 高级 → 关闭 IPv6"
 		}
 		return guiPrefix + " → 网络 → 高级 → 关闭 IPv6"
 	case "patch_updates":
-		if isUOS {
+		if kind.IsUOS {
 			return guiPrefix + " → 更新 → 检查更新 → 全部更新"
 		}
-		if isKylin || isNeoKylin {
+		if kind.IsKylin || kind.IsNeoKylin {
 			return guiPrefix + " → 更新管理 → 检查更新 → 安装更新"
 		}
 		return guiPrefix + " → 更新管理 → 检查更新 → 安装更新"
 	case "password_policy":
-		if isUOS {
+		if kind.IsUOS {
 			return guiPrefix + " → 账户与安全 → 密码策略 → 长度>=10/复杂度>=4/历史5次/锁定"
 		}
-		if isKylin || isNeoKylin {
+		if kind.IsKylin || kind.IsNeoKylin {
 			return guiPrefix + " → 安全中心 → 账户策略 → 密码复杂度与锁定策略"
 		}
 		return guiPrefix + " → 账户策略 → 密码复杂度与锁定策略"
 	case "lock_screen":
-		if isUOS {
+		if kind.IsUOS {
 			return guiPrefix + " → 个性化 → 锁屏 → 开启锁屏并设置 15 分钟内自动锁定"
 		}
-		if isKylin || isNeoKylin {
+		if kind.IsKylin || kind.IsNeoKylin {
 			return guiPrefix + " → 个性化 → 锁屏 → 开启并设置 15 分钟内自动锁定"
 		}
 		return guiPrefix + " → 个性化 → 锁屏 → 开启并设置 15 分钟内自动锁定"
@@ -1489,6 +1617,22 @@ func detectOSInfo() OSInfo {
 		}
 	}
 	return info
+}
+
+type DistroKind struct {
+	IsUOS      bool
+	IsKylin    bool
+	IsNeoKylin bool
+}
+
+func detectDistroKind(info OSInfo) DistroKind {
+	idLower := strings.ToLower(info.ID)
+	nameLower := strings.ToLower(info.Name)
+	return DistroKind{
+		IsUOS:      strings.Contains(idLower, "uos") || strings.Contains(nameLower, "uos"),
+		IsKylin:    strings.Contains(idLower, "kylin") || strings.Contains(nameLower, "kylin"),
+		IsNeoKylin: strings.Contains(idLower, "neokylin") || strings.Contains(nameLower, "neokylin"),
+	}
 }
 
 func trimOSValue(line string) string {
@@ -1536,4 +1680,21 @@ func firewallFixHint() string {
 		return "iptables：INPUT/OUTPUT 链 DROP/REJECT"
 	}
 	return "未检测到防火墙组件，请联系管理员"
+}
+
+func firewallInstallHint() string {
+	return pkgInstallCmd("firewalld")
+}
+
+func pkgInstallCmd(pkg string) string {
+	switch detectPkgManager() {
+	case "apt":
+		return "sudo apt install -y " + pkg
+	case "dnf":
+		return "sudo dnf install -y " + pkg
+	case "yum":
+		return "sudo yum install -y " + pkg
+	default:
+		return "请使用系统包管理器安装 " + pkg
+	}
 }
