@@ -172,6 +172,14 @@ func buildItems() []Item {
 			CanApply:  false,
 			CheckFunc: checkLockScreen,
 		},
+		{
+			ID:        "audit_rules",
+			Name:      "日志审计规则",
+			Desc:      "检查审计服务与规则配置。",
+			Expected:  "auditd运行且已加载规则",
+			CanApply:  false,
+			CheckFunc: checkAuditRules,
+		},
 	}
 }
 
@@ -972,6 +980,11 @@ func checkUSBAutoplay() Result {
 	config := "/etc/dconf/db/local.d/00-xc-baseline"
 	data, err := os.ReadFile(config)
 	if err != nil {
+		if commandExists("gsettings") {
+			if res, ok := checkUSBAutoplayGsettings(); ok {
+				return res
+			}
+		}
 		return Result{Status: "manual", Current: "未发现dconf配置"}
 	}
 	content := string(data)
@@ -981,6 +994,26 @@ func checkUSBAutoplay() Result {
 		return Result{Status: "pass", Current: "automount=false, automount-open=false"}
 	}
 	return Result{Status: "fail", Current: fmt.Sprintf("automount=%t, automount-open=%t", automount, automountOpen)}
+}
+
+func checkUSBAutoplayGsettings() (Result, bool) {
+	candidates := []string{
+		"org.gnome.desktop.media-handling",
+		"org.ukui.desktop.media-handling",
+		"com.deepin.wrap.gnome.desktop.media-handling",
+	}
+	for _, schema := range candidates {
+		automount, okAuto := gsettingsGetBool(schema, "automount")
+		automountOpen, okOpen := gsettingsGetBool(schema, "automount-open")
+		if !okAuto || !okOpen {
+			continue
+		}
+		if !automount && !automountOpen {
+			return Result{Status: "pass", Current: fmt.Sprintf("%s: automount=false, automount-open=false", schema)}, true
+		}
+		return Result{Status: "fail", Current: fmt.Sprintf("%s: automount=%t, automount-open=%t", schema, automount, automountOpen)}, true
+	}
+	return Result{}, false
 }
 
 func applyUSBAutoplay() error {
@@ -1059,6 +1092,7 @@ func checkLockScreenGsettings() Result {
 	candidates := []schemaSet{
 		{SessionSchema: "org.gnome.desktop.session", ScreensSchema: "org.gnome.desktop.screensaver"},
 		{SessionSchema: "org.ukui.session", ScreensSchema: "org.ukui.screensaver"},
+		{SessionSchema: "com.deepin.wrap.gnome.desktop.session", ScreensSchema: "com.deepin.wrap.gnome.desktop.screensaver"},
 	}
 	for _, cand := range candidates {
 		idleRaw, okIdle := gsettingsGet(cand.SessionSchema, "idle-delay")
@@ -1078,12 +1112,92 @@ func checkLockScreenGsettings() Result {
 	return Result{Status: "manual", Current: "未发现dconf配置"}
 }
 
+func checkAuditRules() Result {
+	installed := commandExists("auditctl") || fileExists("/sbin/auditd") || fileExists("/usr/sbin/auditd")
+	if !installed {
+		return Result{Status: "fail", Current: "未安装auditd"}
+	}
+	active := isServiceActive("auditd")
+	if !active && commandExists("pgrep") {
+		_, code := runCommand("pgrep", "-x", "auditd")
+		active = code == 0
+	}
+	ruleCount, ruleSources := auditRuleSummary()
+	if !active {
+		return Result{Status: "fail", Current: "auditd未运行 | 规则数: " + fmt.Sprintf("%d", ruleCount) + " | 规则文件: " + strings.Join(ruleSources, ", ")}
+	}
+	if ruleCount == 0 {
+		return Result{Status: "fail", Current: "auditd运行但未发现规则"}
+	}
+	return Result{Status: "pass", Current: fmt.Sprintf("auditd运行中 | 规则数: %d | 规则文件: %s", ruleCount, strings.Join(ruleSources, ", "))}
+}
+
+func auditRuleSummary() (int, []string) {
+	ruleCount := 0
+	sources := []string{}
+	paths := []string{"/etc/audit/audit.rules"}
+	if entries, err := os.ReadDir("/etc/audit/rules.d"); err == nil {
+		for _, entry := range entries {
+			if entry.IsDir() {
+				continue
+			}
+			if strings.HasSuffix(entry.Name(), ".rules") {
+				paths = append(paths, filepath.Join("/etc/audit/rules.d", entry.Name()))
+			}
+		}
+	}
+	for _, path := range paths {
+		count := countAuditRules(path)
+		if count > 0 {
+			ruleCount += count
+			sources = append(sources, path)
+		}
+	}
+	return ruleCount, sources
+}
+
+func countAuditRules(path string) int {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return 0
+	}
+	count := 0
+	for _, line := range strings.Split(string(data), "\n") {
+		trim := strings.TrimSpace(line)
+		if trim == "" || strings.HasPrefix(trim, "#") {
+			continue
+		}
+		count++
+	}
+	return count
+}
+
+func fileExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
+}
+
 func gsettingsGet(schema, key string) (string, bool) {
 	out, code := runCommand("gsettings", "get", schema, key)
 	if code != 0 {
 		return "", false
 	}
 	return strings.TrimSpace(out), true
+}
+
+func gsettingsGetBool(schema, key string) (bool, bool) {
+	out, ok := gsettingsGet(schema, key)
+	if !ok {
+		return false, false
+	}
+	val := strings.TrimSpace(out)
+	if val == "true" {
+		return true, true
+	}
+	if val == "false" {
+		return false, true
+	}
+	return false, false
 }
 
 func applyFTPService() error {
@@ -1591,6 +1705,14 @@ func manualFixHint(id string) string {
 			return guiPrefix + " → 个性化 → 锁屏 → 开启并设置 15 分钟内自动锁定"
 		}
 		return guiPrefix + " → 个性化 → 锁屏 → 开启并设置 15 分钟内自动锁定"
+	case "audit_rules":
+		if kind.IsUOS {
+			return "安装与启用审计服务: " + pkgInstallCmd("auditd") + "；systemctl enable --now auditd；在 /etc/audit/rules.d/ 下配置规则并执行 augenrules --load"
+		}
+		if kind.IsKylin || kind.IsNeoKylin {
+			return "安装与启用审计服务: " + pkgInstallCmd("audit") + "；systemctl enable --now auditd；在 /etc/audit/rules.d/ 下配置规则并执行 augenrules --load"
+		}
+		return "安装并启用 auditd，配置 /etc/audit/rules.d/*.rules 并执行 augenrules --load"
 	default:
 		return ""
 	}
